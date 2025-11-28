@@ -120,7 +120,7 @@ class TelaPrincipal:
 
         nome = campo("Nome:")
         cat = campo("Categoria:")
-        un = campo("Unidade (ex: un, kg):")
+        un = campo("Unidade (ex: ml, kg):")
         minimo = campo("Estoque mínimo:")
 
         def salvar():
