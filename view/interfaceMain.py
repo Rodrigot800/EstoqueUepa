@@ -6,6 +6,8 @@ from funcsEstoque import (
     registrar_movimento,
     calcular_saldo
 )
+from view.janela_produto import JanelaCadastroProduto
+from view.janela_movimento import JanelaMovimentacao
 
 class TelaPrincipal:
     def __init__(self, root):
@@ -99,6 +101,12 @@ class TelaPrincipal:
             saldo = calcular_saldo(id_) if id_ is not None else 0
             self.tabela.insert("", "end", values=(id_, nome or "", saldo))
 
+    def janela_produto(self):
+        JanelaCadastroProduto(self.root, self.carregar)
+
+    def janela_movimento(self):
+        JanelaMovimentacao(self.root, self.carregar)
+
     # ----------------------------------------
     # Filtrar tabela conforme pesquisa
     # ----------------------------------------
@@ -115,121 +123,7 @@ class TelaPrincipal:
                 filtrados.append(p)
         self.atualizar_tabela(filtrados)
 
-    # ----------------------------------------
-    # Janela cadastro de produto (corrigida)
-    # ----------------------------------------
-    def janela_produto(self):
-        win = tk.Toplevel(self.root)
-        win.title("Cadastrar Produto")
-        win.geometry("350x360")
-        win.configure(bg="#fafafa")
-
-        tk.Label(
-            win,
-            text="Cadastrar novo produto",
-            font=("Arial", 14, "bold"),
-            bg="#fafafa"
-        ).pack(pady=10)
-
-        # ---------------- NOME ----------------
-        tk.Label(win, text="Nome:", bg="#fafafa").pack(anchor="w", padx=20)
-        nome_var = tk.StringVar()
-        nome_entry = ttk.Combobox(win, textvariable=nome_var)
-        nome_entry.pack(fill="x", padx=20, pady=5)
-
-        nomes_existentes = sorted({p[1] for p in listar_produtos() if len(p) > 1 and p[1]})
-        nome_entry["values"] = nomes_existentes
-
-        def atualizar_sugestoes(*_):
-            texto = nome_var.get().lower()
-            if not texto:
-                nome_entry["values"] = nomes_existentes
-                return
-            filtrados = [n for n in nomes_existentes if texto in n.lower()]
-            nome_entry["values"] = filtrados
-
-        nome_var.trace_add("write", atualizar_sugestoes)
-
-        # ---------------- UNIDADE ----------------
-        tk.Label(win, text="Unidade:", bg="#fafafa").pack(anchor="w", padx=20)
-        unidade_var = tk.StringVar()
-        unidade_entry = ttk.Combobox(win, textvariable=unidade_var)
-        unidade_entry.pack(fill="x", padx=20, pady=5)
-
-        unidades_existentes = sorted({p[3] for p in listar_produtos() if len(p) > 3 and p[3]})
-        unidade_entry["values"] = unidades_existentes
-
-        # ---------------- MÍNIMO ----------------
-        tk.Label(win, text="Estoque mínimo (opcional):", bg="#fafafa").pack(anchor="w", padx=20)
-        minimo_var = tk.StringVar()
-        minimo_entry = tk.Entry(win, textvariable=minimo_var)
-        minimo_entry.pack(fill="x", padx=20, pady=5)
-
-        # ---------------- SALVAR ----------------
-        def salvar_produto():
-            nome = nome_var.get().strip()
-            unidade = unidade_var.get().strip()
-            minimo = minimo_var.get().strip()
-
-            if not nome:
-                messagebox.showerror("Erro", "O nome do produto é obrigatório.")
-                return
-
-            if not unidade:
-                messagebox.showerror("Erro", "A unidade é obrigatória (ex: kg, ml, caixa).")
-                return
-
-            if minimo and not minimo.isdigit():
-                messagebox.showerror("Erro", "O mínimo deve ser um número inteiro.")
-                return
-
-            minimo_int = int(minimo) if minimo else 0
-
-            inserir_produto(nome, "", unidade, minimo_int)
-            # atualiza a lista local para que sugestões reflitam novo produto
-            self.carregar()
-            win.destroy()
-
-        btn = tk.Button(
-            win,
-            text="Salvar",
-            bg="#4CAF50",
-            fg="white",
-            font=("Arial", 11),
-            width=20,
-            command=salvar_produto
-        )
-        btn.pack(pady=20)
-
-    # ----------------------------------------
-    # Janela movimentação
-    # ----------------------------------------
-    def janela_movimento(self):
-        win = tk.Toplevel(self.root)
-        win.title("Movimentação de Estoque")
-        win.geometry("350x320")
-        win.configure(bg="#fafafa")
-
-        tk.Label(win, text="Registrar movimento",
-                 font=("Arial", 14, "bold"), bg="#fafafa").pack(pady=10)
-
-        produtos = listar_produtos()
-
-        # Produto
-        tk.Label(win, text="Produto:", bg="#fafafa").pack(anchor="w", padx=20)
-        combo = ttk.Combobox(win, values=[f"{p[0]} - {p[1]}" for p in produtos])
-        combo.pack(fill="x", padx=20, pady=5)
-
-        # Tipo
-        tk.Label(win, text="Tipo:", bg="#fafafa").pack(anchor="w", padx=20)
-        tipo = ttk.Combobox(win, values=["ENTRADA", "SAIDA"])
-        tipo.pack(fill="x", padx=20, pady=5)
-
-        # Quantidade
-        tk.Label(win, text="Quantidade:", bg="#fafafa").pack(anchor="w", padx=20)
-        qtd = tk.Entry(win)
-        qtd.pack(fill="x", padx=20, pady=5)
-
+   
         def salvar_mov():
             try:
                 produto_id = int(str(combo.get()).split(" - ")[0])
