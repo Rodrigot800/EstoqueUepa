@@ -121,27 +121,6 @@ class TelaPrincipal:
             nome = p[1] if len(p) > 1 else ""
             if nome and termo in str(nome).lower():
                 filtrados.append(p)
+
         self.atualizar_tabela(filtrados)
 
-   
-        def salvar_mov():
-            try:
-                produto_id = int(str(combo.get()).split(" - ")[0])
-            except Exception:
-                messagebox.showerror("Erro", "Selecione um produto válido.")
-                return
-
-            if not tipo.get():
-                messagebox.showerror("Erro", "Selecione o tipo (ENTRADA ou SAIDA).")
-                return
-
-            if not qtd.get().isdigit():
-                messagebox.showerror("Erro", "Quantidade deve ser um número inteiro.")
-                return
-
-            registrar_movimento(produto_id, tipo.get(), int(qtd.get()))
-            self.carregar()
-            win.destroy()
-
-        tk.Button(win, text="Registrar", bg="#2196F3", fg="white",
-                  font=("Arial", 11), command=salvar_mov).pack(pady=15)
