@@ -11,17 +11,15 @@ class JanelaMovimentacao:
         self.movimentos = []  # ← lista que armazena as movimentações antes de registrar
 
         self.win = tk.Toplevel(parent)
-        self.win.title("Movimentação de Estoque")
+        self.win.title("Registrar Movimentação")
         self.win.geometry("420x600")
+        self.win.resizable(False, False)
         self.win.configure(bg="#fafafa")
-
-        tk.Label(self.win, text="Registrar movimento",
-                 font=("Arial", 14, "bold"), bg="#fafafa").pack(pady=10)
 
         produtos = listar_produtos()
 
        # Produto
-        tk.Label(self.win, text="Produto:", bg="#fafafa").pack(anchor="w", padx=20)
+        tk.Label(self.win, text="Produto:", bg="#fafafa").pack(anchor="w", padx=20 , pady=5)
 
         produtos_formatados = [f"{p[0]} - {p[1]}" for p in produtos]
         self.todos_produtos = produtos_formatados
@@ -128,14 +126,17 @@ class JanelaMovimentacao:
             produto_nome = self.combo.get().split(" - ")[1]
         except:
             messagebox.showerror("Erro", "Selecione um produto válido.")
+            self.win.after(10, self.focar_janela)
             return
 
         if not self.tipo.get():
             messagebox.showerror("Erro", "Selecione o tipo.")
+            self.win.after(10, self.focar_janela)
             return
 
         if not self.qtd.get().isdigit():
             messagebox.showerror("Erro", "Quantidade deve ser número inteiro.")
+            self.win.after(10, self.focar_janela)
             return
 
         qtd = int(self.qtd.get())
@@ -167,6 +168,7 @@ class JanelaMovimentacao:
     def registrar_tudo(self):
         if not self.movimentos:
             messagebox.showwarning("Aviso", "Nenhuma movimentação adicionada.")
+            self.win.after(10, self.focar_janela)
             return
         
         for mov in self.movimentos:
@@ -177,3 +179,7 @@ class JanelaMovimentacao:
 
         self.callback_reload()
         self.win.destroy()
+
+    def focar_janela(self):
+        self.win.lift()
+        self.win.focus_force()
