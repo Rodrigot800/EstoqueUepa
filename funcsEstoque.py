@@ -74,3 +74,13 @@ def calcular_saldo(produto_id):
                 saldo -= qtd
 
     return saldo
+
+
+def aplicar_icone(janela):
+    import os
+    icone_path = os.path.join(
+        os.path.dirname(__file__),
+        "assets",
+        "../assets/UepaEstoqueIcone.png"
+    )
+    janela.iconbitmap(icone_path)

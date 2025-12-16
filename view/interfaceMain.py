@@ -15,6 +15,7 @@ class TelaPrincipal:
         root.title("Controle de Estoque - Excel")
         root.geometry("1080x800")
         root.configure(bg="#f0f0f0")
+        
 
         # ------- TÍTULO -------
         titulo = tk.Label(root, text="Controle de Estoque - UEPA",
@@ -54,6 +55,12 @@ class TelaPrincipal:
 
         self.tabela.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
+
+        # ---- CORES ALTERNADAS (ZEBRA) ----
+        self.tabela.tag_configure("BlueRow", background="#E3F2FD")   # azul claro
+        self.tabela.tag_configure("WhiteRow", background="#FFFFFF") # branco
+
+       
 
         # ------- FRAME BOTÕES -------
         frame_btn = tk.Frame(root, bg="#f0f0f0")
@@ -106,7 +113,29 @@ class TelaPrincipal:
 
     def janela_movimento(self):
         JanelaMovimentacao(self.root, self.carregar)
+    def atualizar_tabela(self, lista):
+        for item in self.tabela.get_children():
+            self.tabela.delete(item)
 
+        for index, linha in enumerate(lista):
+            try:
+                id_, nome, cat, un, min_ = linha
+            except Exception:
+                values = tuple(linha)[:3]
+                tag = "BlueRow" if index % 2 == 0 else "WhiteRow"
+                self.tabela.insert("", "end", values=values, tags=(tag,))
+                continue
+
+            saldo = calcular_saldo(id_) if id_ is not None else 0
+
+            tag = "BlueRow" if index % 2 == 0 else "WhiteRow"
+
+            self.tabela.insert(
+                "",
+                "end",
+                values=(id_, nome or "", saldo),
+                tags=(tag,)
+            )
     # ----------------------------------------
     # Filtrar tabela conforme pesquisa
     # ----------------------------------------

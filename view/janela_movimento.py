@@ -11,12 +11,19 @@ class JanelaMovimentacao:
         self.movimentos = []  # ← lista que armazena as movimentações antes de registrar
 
         self.win = tk.Toplevel(parent)
-        self.win.title("Registrar Movimentação")
-        self.win.geometry("420x600")
+        self.win.geometry("400x600")
         self.win.resizable(False, False)
         self.win.configure(bg="#fafafa")
 
         produtos = listar_produtos()
+
+        # ---------------- TÍTULO ----------------
+        tk.Label(
+            self.win,
+            text="Registrar Movimentações",
+            font=("Arial", 14, "bold"),
+            bg="#fafafa"
+        ).pack(pady=10)
 
        # Produto
         tk.Label(self.win, text="Produto:", bg="#fafafa").pack(anchor="w", padx=20 , pady=5)
@@ -95,7 +102,7 @@ class JanelaMovimentacao:
         # Botão REGISTRAR TUDO
         tk.Button(
             self.win,
-            text="Registrar Tudo",
+            text="Registrar Lista",
             bg="#2196F3",
             fg="white",
             font=("Arial", 11),
