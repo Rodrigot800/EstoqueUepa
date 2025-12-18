@@ -180,7 +180,7 @@ class JanelaMovimentacao:
         
         for mov in self.movimentos:
             produto_id, nome, tipo, qtd = mov
-            registrar_movimento(produto_id, tipo, qtd)
+            registrar_movimento(nome, tipo, qtd)
 
         messagebox.showinfo("Sucesso", "Movimentações registradas com sucesso!")
 

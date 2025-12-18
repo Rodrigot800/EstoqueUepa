@@ -2,6 +2,7 @@ from openpyxl import load_workbook
 from datetime import datetime
 import os
 
+
 ARQUIVO = "estoque.xlsx"
 
 def carregar():
@@ -47,14 +48,14 @@ def listar_movimentos():
     wb.close()
     return movimentos
 
-def registrar_movimento(produto_id, tipo, quantidade):
+def registrar_movimento(produto, tipo, quantidade):
     wb = carregar()
     ws = wb["movimentos"]
 
     novo_id = ws.max_row
     data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    ws.append([novo_id, produto_id, tipo, quantidade, data])
+    ws.append([novo_id, produto, tipo, quantidade, data])
 
     wb.save(ARQUIVO)
     wb.close()
@@ -84,3 +85,17 @@ def aplicar_icone(janela):
         "../assets/UepaEstoqueIcone.png"
     )
     janela.iconbitmap(icone_path)
+
+def listar_movimentacoes():
+    wb = load_workbook(ARQUIVO)
+    ws = wb["movimentos"]  # ajuste se o nome da aba for outro
+
+    dados = []
+
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        # Exemplo de colunas:
+        # data, produto_id, produto_nome, tipo, quantidade
+        dados.append(row)
+
+    wb.close()
+    return dados
