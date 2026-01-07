@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from view.janela_produto import JanelaCadastroProduto
 from view.janela_movimento import JanelaMovimentacao
+from view.janela_movimentos_datas import JanelaMovimentacoes
 from funcsEstoque import listar_produtos, calcular_saldo, listar_movimentacoes
 
 
@@ -75,8 +76,8 @@ class TelaPrincipal:
         self.tabela.heading("nome", text="Produto")
         self.tabela.heading("saldo", text="Saldo")
 
-        self.tabela.column("id", width=60, anchor="e")
-        self.tabela.column("nome", width=800, anchor="w")
+        self.tabela.column("id", width=60, anchor="center")
+        self.tabela.column("nome", width=800, anchor="sw")
         self.tabela.column("saldo", width=120, anchor="center")
 
         scroll = ttk.Scrollbar(frame, orient="vertical", command=self.tabela.yview)
@@ -113,9 +114,10 @@ class TelaPrincipal:
         tk.Button(
             frame,
             text="Ver Movimentações",
-            command=self.mostrar_movimentacoes,
+            command=self.janela_movimentacoes,
             **estilo
-        ).pack(side="left", padx=5)
+        ).pack(side="left", padx=10)
+
 
 
     # ---------------- Lógica ----------------
@@ -125,7 +127,8 @@ class TelaPrincipal:
 
         if self.modo_tabela == "estoque":
             self.atualizar_tabela_estoque()
-
+        self.ordem_var.set("Nome (A-Z)")
+        self.filtrar_e_ordenar()
 
     def filtrar_e_ordenar(self, event=None):
         termo = self.entry_pesquisa.get().lower().strip()
@@ -211,32 +214,5 @@ class TelaPrincipal:
                 tags=(tag,)
             )
 
-    def mostrar_movimentacoes(self):
-        # Limpa tabela atual
-        self.tabela.delete(*self.tabela.get_children())
-
-        # Muda colunas
-        self.tabela["columns"] = ("data", "produto", "tipo", "qtd")
-
-        self.tabela.heading("data", text="Data")
-        self.tabela.heading("produto", text="Produto")
-        self.tabela.heading("tipo", text="Tipo")
-        self.tabela.heading("qtd", text="Quantidade")
-
-        self.tabela.column("data", width=150, anchor="center")
-        self.tabela.column("produto", width=500, anchor="w")
-        self.tabela.column("tipo", width=120, anchor="center")
-        self.tabela.column("qtd", width=120, anchor="center")
-
-        movimentacoes = listar_movimentacoes() or []
-
-        for index, mov in enumerate(movimentacoes):
-            tag = "BlueRow" if index % 2 == 0 else "WhiteRow"
-
-            self.tabela.insert(
-                "",
-                "end",
-                values=mov,
-                tags=(tag,)
-            )
-
+    def janela_movimentacoes(self):
+        JanelaMovimentacoes(self.root)
