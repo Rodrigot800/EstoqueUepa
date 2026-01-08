@@ -129,6 +129,7 @@ class TelaPrincipal:
             self.atualizar_tabela_estoque()
         self.ordem_var.set("Nome (A-Z)")
         self.filtrar_e_ordenar()
+        
 
     def filtrar_e_ordenar(self, event=None):
         termo = self.entry_pesquisa.get().lower().strip()
