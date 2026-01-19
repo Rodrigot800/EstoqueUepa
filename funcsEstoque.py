@@ -1,14 +1,75 @@
-from openpyxl import load_workbook
+from openpyxl import load_workbook,Workbook
 from datetime import datetime
+from tkinter import filedialog
 import os
 
+def selecionar_e_preparar_planilha():
+    caminho = filedialog.askopenfilename(
+        title="Selecionar planilha de estoque",
+        filetypes=[("Planilhas Excel", "*.xlsx")]
+    )
 
-ARQUIVO = "estoque.xlsx"
+    if not caminho:
+        return None, None
+
+    if os.path.exists(caminho):
+        wb = load_workbook(caminho)
+    else:
+        wb = Workbook()
+
+    # ---------------------------
+    # ABA PRODUTOS
+    # ---------------------------
+    if "produtos" not in wb.sheetnames:
+        ws_produtos = wb.create_sheet("produtos")
+        ws_produtos.append([
+            "ID",
+            "Nome",
+            "Qtd_Mínima",
+            "Unidade",
+            "Estoque"
+        ])
+    else:
+        ws_produtos = wb["produtos"]
+
+    # ---------------------------
+    # ABA MOVIMENTOS
+    # ---------------------------
+    if "movimentos" not in wb.sheetnames:
+        ws_mov = wb.create_sheet("movimentos")
+        ws_mov.append([
+            "ID",
+            "ProdutoID",
+            "Tipo",
+            "Quantidade",
+            "Data"
+        ])
+
+    # Remove aba padrão se existir
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+
+    wb.save(caminho)
+    wb.close()
+
+    nome = os.path.basename(caminho)
+    return caminho, nome
+
+ARQUIVO = None
+
+def set_arquivo(caminho):
+    global ARQUIVO
+    ARQUIVO = caminho
 
 def carregar():
+    if not ARQUIVO:
+        raise Exception("Nenhuma planilha selecionada.")
+
     if not os.path.exists(ARQUIVO):
-        raise Exception("Arquivo estoque.xlsx não encontrado.")
+        raise Exception("Arquivo da planilha não encontrado.")
+
     return load_workbook(ARQUIVO)
+
 
 # ----------------------------
 # PRODUTOS

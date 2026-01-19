@@ -4,7 +4,13 @@ from view.janela_produto import JanelaCadastroProduto
 from view.janela_movimento import JanelaMovimentacao
 from view.janela_movimentos_datas import JanelaMovimentacoes
 from funcsEstoque import listar_produtos, calcular_saldo, listar_movimentacoes
+from config import salvar_caminho_planilha
+from funcsEstoque import set_arquivo
+from funcsEstoque import selecionar_e_preparar_planilha
+from config import carregar_caminho_planilha
+from config import salvar_caminho_planilha
 
+import os
 
 class TelaPrincipal:
     def __init__(self, root):
@@ -13,24 +19,35 @@ class TelaPrincipal:
         self.root.geometry("1080x800")
         self.root.configure(bg="#f0f0f0")
 
+        self.caminho_planilha = None
+        self.nome_planilha = tk.StringVar(value="Nenhuma planilha carregada")
         self.produtos_lista = []
 
+        # 🔹 CRIA A INTERFACE PRIMEIRO
         self.criar_titulo()
         self.criar_barra_superior()
         self.criar_tabela()
         self.criar_botoes()
-        self.modo_tabela = "estoque"  # ou "movimentacoes"
-        self.carregar()
+
+        # 🔹 DEPOIS carrega a planilha salva
+        self.carregar_planilha_salva()
+
+
 
     # ---------------- UI ----------------
 
     def criar_titulo(self):
-        tk.Label(
+        self.nome_planilha = tk.StringVar(value="Nenhuma planilha carregada")
+
+        self.label_titulo = tk.Label(
             self.root,
-            text="Controle de Estoque - UEPA",
+            textvariable=self.nome_planilha,
             font=("Arial", 20, "bold"),
             bg="#f0f0f0"
-        ).pack(pady=10)
+        )
+        self.label_titulo.pack(pady=10)
+
+
     
     def criar_barra_superior(self):
         frame = tk.Frame(self.root, bg="#f0f0f0")
@@ -58,8 +75,28 @@ class TelaPrincipal:
                 "Saldo (Maior → Menor)"
             ]
         )
-        self.combo_ordem.pack(side="left")
+        self.combo_ordem.pack(side="left", padx=(0, 15))
         self.combo_ordem.bind("<<ComboboxSelected>>", self.filtrar_e_ordenar)
+
+        # -----------------------------
+        # PLANILHA
+        # -----------------------------
+        tk.Label(frame, text="Planilha:", bg="#f0f0f0").pack(side="left")
+
+        self.entry_planilha = tk.Entry(
+            frame,
+            textvariable=self.nome_planilha,
+            state="readonly",
+            width=30
+        )
+        self.entry_planilha.pack(side="left", padx=5)
+
+        tk.Button(
+            frame,
+            text="Selecionar",
+            command=self.selecionar_planilha
+        ).pack(side="left")
+
 
     def criar_tabela(self):
         frame = tk.Frame(self.root)
@@ -104,12 +141,6 @@ class TelaPrincipal:
 
         tk.Button(frame, text="Atualizar",
                   command=self.carregar, **estilo).pack(side="left", padx=10)
-        tk.Button(
-            frame,
-            text="Ver Estoque",
-            command=self.mostrar_estoque,
-            **estilo
-        ).pack(side="left", padx=5)
 
         tk.Button(
             frame,
@@ -124,12 +155,23 @@ class TelaPrincipal:
 
     def carregar(self):
         self.produtos_lista = listar_produtos() or []
-
-        if self.modo_tabela == "estoque":
-            self.atualizar_tabela_estoque()
         self.ordem_var.set("Nome (A-Z)")
         self.filtrar_e_ordenar()
+
         
+    def selecionar_planilha(self):
+        caminho, nome = selecionar_e_preparar_planilha()
+
+        if not caminho:
+            return
+
+        set_arquivo(caminho)
+        salvar_caminho_planilha(caminho)  
+        self.nome_planilha.set(nome)
+        self.atualizar_titulo()
+        self.carregar()
+
+
 
     def filtrar_e_ordenar(self, event=None):
         termo = self.entry_pesquisa.get().lower().strip()
@@ -188,32 +230,20 @@ class TelaPrincipal:
         for col, titulo, largura in zip(colunas, titulos, larguras):
             self.tabela.heading(col, text=titulo)
             self.tabela.column(col, width=largura, anchor="center")
-    def mostrar_estoque(self):
-        self.modo_tabela = "estoque"
-
-        self.configurar_colunas(
-            colunas=("id", "nome", "saldo"),
-            titulos=("ID", "Produto", "Saldo"),
-            larguras=(60, 800, 120)
-        )
-
-        self.atualizar_tabela_estoque()
-
-    def atualizar_tabela_estoque(self):
-        self.tabela.delete(*self.tabela.get_children())
-
-        for index, linha in enumerate(self.produtos_lista):
-            id_, nome = linha[0], linha[1]
-            saldo = calcular_saldo(id_) if id_ else 0
-
-            tag = "BlueRow" if index % 2 == 0 else "WhiteRow"
-
-            self.tabela.insert(
-                "",
-                "end",
-                values=(id_, nome, saldo),
-                tags=(tag,)
-            )
 
     def janela_movimentacoes(self):
         JanelaMovimentacoes(self.root)
+
+    def atualizar_titulo(self):
+        self.label_titulo.config(
+            text=f"Controle de Estoque - {self.nome_planilha.get()}"
+        )
+    def carregar_planilha_salva(self):
+        caminho_salvo = carregar_caminho_planilha()
+
+        if caminho_salvo and os.path.exists(caminho_salvo):
+            set_arquivo(caminho_salvo)
+            nome = os.path.basename(caminho_salvo)
+            self.nome_planilha.set(nome)
+            self.atualizar_titulo()
+            self.carregar()
