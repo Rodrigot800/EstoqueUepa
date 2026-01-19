@@ -11,7 +11,7 @@ class JanelaMovimentacao:
         self.movimentos = []  # ← lista que armazena as movimentações antes de registrar
 
         self.win = tk.Toplevel(parent)
-        self.win.geometry("400x600")
+        self.win.geometry("420x600")
         self.win.resizable(False, False)
         self.win.configure(bg="#fafafa")
 
@@ -44,25 +44,27 @@ class JanelaMovimentacao:
         self.produto_var.trace_add("write", self.autocomplete_produto)
 
 
+        frame_inputs = tk.Frame(self.win, bg="#fafafa")
+        frame_inputs.pack(fill="x", padx=20, pady=5)
 
         # Tipo
-        tk.Label(self.win, text="Tipo:", bg="#fafafa").pack(anchor="w", padx=20)
+        tk.Label(frame_inputs, text="Tipo:", bg="#fafafa").pack(side="left", padx=0, pady=5)
 
         self.tipo = ttk.Combobox(
-            self.win,
+            frame_inputs,
             values=["ENTRADA", "SAIDA"],
-            state="readonly"   # ← impede digitação
+            state="readonly",
+            width=15   # ← impede digitação
         )
 
         self.tipo.set("ENTRADA")  # valor padrão
 
-        self.tipo.pack(fill="x", padx=20, pady=5)
-
+        self.tipo.pack(side="left", padx=(0,50), pady=5)
 
         # Quantidade
-        tk.Label(self.win, text="Quantidade:", bg="#fafafa").pack(anchor="w", padx=20)
-        self.qtd = tk.Entry(self.win)
-        self.qtd.pack(fill="x", padx=20, pady=5)
+        tk.Label(frame_inputs, text="Quantidade:", bg="#fafafa").pack(side="left", padx=0, pady=5)
+        self.qtd = tk.Entry(frame_inputs, width=8)
+        self.qtd.pack(side="left", padx=0, pady=5)
 
         # Botão ADICIONAR
         tk.Button(
@@ -98,16 +100,30 @@ class JanelaMovimentacao:
         self.tabela.tag_configure("BlueRow", background="#E3F2FD")
         self.tabela.tag_configure("WhiteRow", background="#FFFFFF")
 
+        frame_buttons = tk.Frame(self.win, bg="#fafafa")
+        frame_buttons.pack(pady=10)
 
         # Botão REGISTRAR TUDO
         tk.Button(
-            self.win,
+            frame_buttons,
             text="Registrar Lista",
             bg="#2196F3",
             fg="white",
             font=("Arial", 11),
+            width=20,
             command=self.registrar_tudo
-        ).pack(pady=15)
+        ).pack(side="left",pady=15)
+
+        tk.Button(
+            frame_buttons, 
+            text="Remover",
+            bg="#f44336",
+            fg="white",
+            font=("Arial", 11),
+            width=15,
+            command=self.remover_produto
+        ).pack(side="left", padx=5, pady=15)
+
     def autocomplete_produto(self, *_):
         
         texto = self.produto_var.get().lower()
@@ -186,6 +202,30 @@ class JanelaMovimentacao:
 
         self.callback_reload()
         self.win.destroy()
+    def remover_produto(self):
+        selecionados = self.tabela.selection()
+
+        if not selecionados:
+            messagebox.showwarning("Aviso", "Selecione uma movimentação para remover.")
+            self.win.after(10, self.focar_janela)
+            return
+
+        # Remove do final para o início (evita bagunçar índices)
+        for item in reversed(selecionados):
+            index = self.tabela.index(item)
+
+            # Remove da lista interna
+            del self.movimentos[index]
+
+            # Remove da tabela
+            self.tabela.delete(item)
+
+        # Reorganiza cores após remoção
+        for i, item in enumerate(self.tabela.get_children()):
+            tag = "BlueRow" if i % 2 == 0 else "WhiteRow"
+            self.tabela.item(item, tags=(tag,))
+
+        
 
     def focar_janela(self):
         self.win.lift()

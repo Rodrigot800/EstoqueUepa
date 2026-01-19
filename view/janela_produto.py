@@ -165,7 +165,7 @@ class JanelaCadastroProduto:
                 "Erro",
                 "Quantidade mínima deve ser um número inteiro maior ou igual a zero."
             )
-            returngit 
+            return
 
 
         # Salva na lista temporária
