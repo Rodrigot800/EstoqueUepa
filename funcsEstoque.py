@@ -25,8 +25,8 @@ def selecionar_e_preparar_planilha():
         ws_produtos.append([
             "ID",
             "Nome",
-            "Qtd_Mínima",
             "Unidade",
+            "Qtd_Mínima",
             "Estoque"
         ])
     else:
@@ -40,6 +40,7 @@ def selecionar_e_preparar_planilha():
         ws_mov.append([
             "ID",
             "ProdutoID",
+            "ProdutoNome",
             "Tipo",
             "Quantidade",
             "Data"
@@ -90,7 +91,7 @@ def inserir_produto(nome, categoria, unidade, minimo):
     ws = wb["produtos"]
 
     novo_id = ws.max_row  # simples: ID = linha
-    ws.append([novo_id, nome, categoria, unidade, minimo])
+    ws.append([novo_id, nome, categoria, unidade, 0])
 
     wb.save(ARQUIVO)
     wb.close()
@@ -109,31 +110,71 @@ def listar_movimentos():
     wb.close()
     return movimentos
 
-def registrar_movimento(produto, tipo, quantidade):
+def registrar_movimento(produto_id, produto_nome, tipo, quantidade):
     wb = carregar()
     ws = wb["movimentos"]
 
     novo_id = ws.max_row
     data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    ws.append([novo_id, produto, tipo, quantidade, data])
+    ws.append([
+        novo_id,
+        produto_id,       # usado para estoque
+        produto_nome,     # usado para histórico
+        tipo,
+        quantidade,
+        data
+    ])
 
     wb.save(ARQUIVO)
     wb.close()
 
+    atualizar_estoque_produto(produto_id)
+
+
 # ----------------------------
 # SALDO
 # ----------------------------
+
+def atualizar_estoque_produto(produto_id):
+    wb = carregar()
+    ws = wb["produtos"]
+
+    saldo = calcular_saldo(produto_id)
+
+    for row in ws.iter_rows(min_row=2):
+        if row[0].value == produto_id:
+            row[4].value = saldo  # coluna Estoque
+            break
+
+    wb.save(ARQUIVO)
+    wb.close()
+
+def inserir_produto(nome, unidade, minimo):
+    wb = carregar()
+    ws = wb["produtos"]
+
+    novo_id = ws.max_row
+    ws.append([novo_id, nome, unidade, minimo, 0])  # estoque começa 0
+
+    wb.save(ARQUIVO)
+    wb.close()
+
 def calcular_saldo(produto_id):
     movimentos = listar_movimentos()
     saldo = 0
 
-    for _, pid, tipo, qtd, _ in movimentos:
-        if pid == produto_id:
+    produto_id = int(produto_id)
+
+    for _, pid, _, tipo, qtd, _ in movimentos:
+        if pid is None:
+            continue
+
+        if int(pid) == produto_id:
             if tipo == "ENTRADA":
-                saldo += qtd
+                saldo += int(qtd)
             else:
-                saldo -= qtd
+                saldo -= int(qtd)
 
     return saldo
 

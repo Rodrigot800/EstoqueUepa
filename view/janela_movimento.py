@@ -193,15 +193,16 @@ class JanelaMovimentacao:
             messagebox.showwarning("Aviso", "Nenhuma movimentação adicionada.")
             self.win.after(10, self.focar_janela)
             return
-        
+
         for mov in self.movimentos:
-            produto_id, nome, tipo, qtd = mov
-            registrar_movimento(nome, tipo, qtd)
+            produto_id, produto_nome, tipo, qtd = mov
+            registrar_movimento(produto_id, produto_nome, tipo, qtd)
 
         messagebox.showinfo("Sucesso", "Movimentações registradas com sucesso!")
 
         self.callback_reload()
         self.win.destroy()
+
     def remover_produto(self):
         selecionados = self.tabela.selection()
 
