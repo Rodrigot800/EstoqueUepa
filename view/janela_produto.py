@@ -179,7 +179,7 @@ class JanelaCadastroProduto:
         self.tabela.insert(
             "",
             tk.END,
-            values=(nome, qtd_min, unidade),
+            values=(nome, unidade, qtd_min),
             tags=(tag,)
         )
 
@@ -198,7 +198,7 @@ class JanelaCadastroProduto:
             return
 
         for nome, unidade, qtd_min in self.produtos_temp:
-            inserir_produto(nome, qtd_min, unidade, 0)
+            inserir_produto(nome, unidade, qtd_min)
 
         messagebox.showinfo("Sucesso", "Produtos cadastrados com sucesso!")
         self.callback_reload()

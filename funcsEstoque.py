@@ -86,12 +86,12 @@ def listar_produtos():
     wb.close()
     return produtos
 
-def inserir_produto(nome, categoria, unidade, minimo):
+def inserir_produto(nome, unidade, minimo):
     wb = carregar()
     ws = wb["produtos"]
 
-    novo_id = ws.max_row  # simples: ID = linha
-    ws.append([novo_id, nome, categoria, unidade, 0])
+    novo_id = ws.max_row
+    ws.append([novo_id, nome, unidade, minimo, 0])
 
     wb.save(ARQUIVO)
     wb.close()

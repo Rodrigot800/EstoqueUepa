@@ -25,7 +25,7 @@ class JanelaMovimentacoes:
 
         self.tabela = ttk.Treeview(
             frame,
-            columns=("data", "produto", "tipo", "qtd"),
+            columns=( "produto", "tipo", "qtd" , "data" ),
             show="headings",
             height=15
         )
@@ -58,9 +58,13 @@ class JanelaMovimentacoes:
         for index, mov in enumerate(movimentacoes):
             tag = "BlueRow" if index % 2 == 0 else "WhiteRow"
 
+            # desempacotando apenas o que interessa
+            _, _, produto_nome, tipo, quantidade, data = mov
+
             self.tabela.insert(
                 "",
                 "end",
-                values=mov,
+                values=(produto_nome, tipo, quantidade, data),
                 tags=(tag,)
             )
+
