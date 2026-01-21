@@ -1,0 +1,7 @@
+ pyinstaller \
+  --onefile \
+  --windowed \
+  --name EstoqueUEPA \
+  --icon assets/UepaEstoqueIcone.ico \
+  --add-data "assets;assets" \
+  app.py

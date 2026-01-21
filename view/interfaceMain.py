@@ -22,6 +22,10 @@ class TelaPrincipal:
         self.caminho_planilha = None
         self.nome_planilha = tk.StringVar(value="Nenhuma planilha carregada")
         self.produtos_lista = []
+        self.win_produtos = None
+        self.win_movimento = None
+        self.win_movimentos = None
+
 
         # 🔹 CRIA A INTERFACE PRIMEIRO
         self.criar_titulo()
@@ -213,10 +217,40 @@ class TelaPrincipal:
             )
 
     def janela_produto(self):
-        JanelaCadastroProduto(self.root, self.carregar)
+        if self.win_produtos and self.win_produtos.win.winfo_exists():
+            self.win_produtos.win.lift()
+            self.win_produtos.win.focus_force()
+            return
+
+        self.win_produtos = JanelaCadastroProduto(self.root, self.carregar)
+
+        self.win_produtos.win.protocol(
+            "WM_DELETE_WINDOW",
+        self.fechar_win_produtos
+         )
+    def fechar_win_produtos(self):
+        if self.win_produtos:
+            self.win_produtos.win.destroy()
+            self.win_produtos = None
 
     def janela_movimento(self):
-        JanelaMovimentacao(self.root, self.carregar)
+        if self.win_movimento and self.win_movimento.win.winfo_exists():
+            self.win_movimento.win.lift()
+            self.win_movimento.win.focus_force()
+            return
+
+        self.win_movimento = JanelaMovimentacao(self.root, self.carregar)
+
+        self.win_movimento.win.protocol(
+            "WM_DELETE_WINDOW",
+            self.fechar_janela_movimento
+        )
+
+    def fechar_janela_movimento(self):
+        if self.win_movimento:
+            self.win_movimento.win.destroy()
+            self.win_movimento = None
+            return
     
     def configurar_colunas(self, colunas, titulos, larguras):
         self.tabela.delete(*self.tabela.get_children())
@@ -232,7 +266,22 @@ class TelaPrincipal:
             self.tabela.column(col, width=largura, anchor="center")
 
     def janela_movimentacoes(self):
-        JanelaMovimentacoes(self.root)
+        if self.win_movimentos and self.win_movimentos.win.winfo_exists():
+            self.win_movimentos.win.lift()
+            self.win_movimentos.win.focus_force()
+            return
+
+        self.win_movimentos = JanelaMovimentacoes(self.root)
+
+        self.win_movimentos.win.protocol(
+            "WM_DELETE_WINDOW",
+            self.fechar_janela_movimentacoes
+        )
+
+    def fechar_janela_movimentacoes(self):
+        if self.win_movimentos:
+            self.win_movimentos.win.destroy()
+            self.win_movimentos = None
 
     def atualizar_titulo(self):
         self.label_titulo.config(
