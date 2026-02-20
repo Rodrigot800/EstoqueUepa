@@ -20,7 +20,8 @@ class TelaPrincipal:
         self.root.configure(bg="#f0f0f0")
 
         self.caminho_planilha = None
-        self.nome_planilha = tk.StringVar(value="Nenhuma planilha carregada")
+        self.titulo_var = tk.StringVar()
+        self.planilha_var = tk.StringVar(value="Nenhuma planilha carregada")
         self.produtos_lista = []
         self.win_produtos = None
         self.win_movimento = None
@@ -41,11 +42,11 @@ class TelaPrincipal:
     # ---------------- UI ----------------
 
     def criar_titulo(self):
-        self.nome_planilha = tk.StringVar(value="Nenhuma planilha carregada")
+        self.titulo_var.set("Controle de Estoque - Nenhuma planilha carregada")
 
         self.label_titulo = tk.Label(
             self.root,
-            textvariable=self.nome_planilha,
+            textvariable=self.titulo_var,
             font=("Arial", 20, "bold"),
             bg="#f0f0f0"
         )
@@ -89,11 +90,10 @@ class TelaPrincipal:
 
         self.entry_planilha = tk.Entry(
             frame,
-            textvariable=self.nome_planilha,
+            textvariable=self.planilha_var,
             state="readonly",
             width=30
         )
-        self.entry_planilha.pack(side="left", padx=5)
 
         tk.Button(
             frame,
@@ -108,7 +108,7 @@ class TelaPrincipal:
 
         self.tabela = ttk.Treeview(
             frame,
-            columns=("id", "nome", "saldo"),
+            columns=("id", "nome", "saldo", "saidaMes", "entradaMes"),
             show="headings",
             height=15
         )
@@ -116,10 +116,15 @@ class TelaPrincipal:
         self.tabela.heading("id", text="ID")
         self.tabela.heading("nome", text="Produto")
         self.tabela.heading("saldo", text="Saldo")
+        self.tabela.heading("saidaMes", text="media_saida")
+        self.tabela.heading("entradaMes", text="media_entrada")
 
-        self.tabela.column("id", width=60, anchor="center")
-        self.tabela.column("nome", width=800, anchor="sw")
-        self.tabela.column("saldo", width=120, anchor="center")
+        self.tabela.column("id", width=20, anchor="center")
+        self.tabela.column("nome", width=250, anchor="sw")
+        self.tabela.column("saldo", width=200, anchor="sw")
+        self.tabela.column("saidaMes", width=200, anchor="sw")
+        self.tabela.column("entradaMes", width=200, anchor="sw")
+
 
         scroll = ttk.Scrollbar(frame, orient="vertical", command=self.tabela.yview)
         self.tabela.configure(yscrollcommand=scroll.set)
@@ -171,7 +176,7 @@ class TelaPrincipal:
 
         set_arquivo(caminho)
         salvar_caminho_planilha(caminho)  
-        self.nome_planilha.set(nome)
+        self.planilha_var.set(nome)
         self.atualizar_titulo()
         self.carregar()
 
@@ -284,15 +289,22 @@ class TelaPrincipal:
             self.win_movimentos = None
 
     def atualizar_titulo(self):
-        self.label_titulo.config(
-            text=f"Controle de Estoque - {self.nome_planilha.get()}"
+        caminho_salvo = carregar_caminho_planilha()
+        nome = os.path.splitext(os.path.basename(caminho_salvo))[0]
+        self.titulo_var.set(
+            f"Controle de Estoque - {nome} "
         )
+        
     def carregar_planilha_salva(self):
         caminho_salvo = carregar_caminho_planilha()
 
-        if caminho_salvo and os.path.exists(caminho_salvo):
-            set_arquivo(caminho_salvo)
-            nome = os.path.basename(caminho_salvo)
-            self.nome_planilha.set(nome)
-            self.atualizar_titulo()
-            self.carregar()
+        if not caminho_salvo or not os.path.exists(caminho_salvo):
+            return
+
+        set_arquivo(caminho_salvo)
+
+        nome = os.path.splitext(os.path.basename(caminho_salvo))[0]
+
+        self.planilha_var.set(nome)
+        self.atualizar_titulo()
+        self.carregar()
