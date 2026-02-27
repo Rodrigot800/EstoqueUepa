@@ -176,7 +176,7 @@ class JanelaMovimentacao:
         # Insere com cor
         self.tabela.insert(
             "",
-            tk.END,
+            0,
             values=(produto_nome, self.tipo.get(), qtd),
             tags=(tag,)
         )

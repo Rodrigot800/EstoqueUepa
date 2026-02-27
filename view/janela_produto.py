@@ -178,7 +178,7 @@ class JanelaCadastroProduto:
 
         self.tabela.insert(
             "",
-            tk.END,
+            0,
             values=(nome, unidade, qtd_min),
             tags=(tag,)
         )

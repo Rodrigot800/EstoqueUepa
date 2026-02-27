@@ -3,7 +3,7 @@ from tkinter import ttk
 from view.janela_produto import JanelaCadastroProduto
 from view.janela_movimento import JanelaMovimentacao
 from view.janela_movimentos_datas import JanelaMovimentacoes
-from funcsEstoque import listar_produtos, calcular_saldo, listar_movimentacoes
+from funcsEstoque import listar_produtos, calcular_saldos, listar_movimentacoes
 from config import salvar_caminho_planilha
 from funcsEstoque import set_arquivo
 from funcsEstoque import selecionar_e_preparar_planilha
@@ -195,11 +195,14 @@ class TelaPrincipal:
         # Ordenação
         if ordem == "Nome (A-Z)":
             lista.sort(key=lambda x: str(x[1]).lower())
+
         elif ordem == "ID":
             lista.sort(key=lambda x: x[0])
+
         elif ordem == "Saldo (Maior → Menor)":
+            saldos = calcular_saldos()
             lista.sort(
-                key=lambda x: calcular_saldo(x[0]) if x[0] else 0,
+                key=lambda x: saldos.get(x[0], 0),
                 reverse=True
             )
 
@@ -210,7 +213,7 @@ class TelaPrincipal:
 
         for index, linha in enumerate(lista):
             id_, nome = linha[0], linha[1]
-            saldo = calcular_saldo(id_) if id_ else 0
+            saldo = calcular_saldos().get(id_, 0)
 
             tag = "BlueRow" if index % 2 == 0 else "WhiteRow"
 

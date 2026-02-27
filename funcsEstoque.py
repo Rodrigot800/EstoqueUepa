@@ -140,7 +140,8 @@ def atualizar_estoque_produto(produto_id):
     wb = carregar()
     ws = wb["produtos"]
 
-    saldo = calcular_saldo(produto_id)
+    saldos = calcular_saldos()
+    saldo = saldos.get(produto_id, 0)
 
     for row in ws.iter_rows(min_row=2):
         if row[0].value == produto_id:
@@ -160,23 +161,25 @@ def inserir_produto(nome, unidade, minimo):
     wb.save(ARQUIVO)
     wb.close()
 
-def calcular_saldo(produto_id):
-    movimentos = listar_movimentos()
-    saldo = 0
+def calcular_saldos():
+    saldos = {}
 
-    produto_id = int(produto_id)
-
-    for _, pid, _, tipo, qtd, _ in movimentos:
+    for _, pid, _, tipo, qtd, _ in listar_movimentos():
         if pid is None:
             continue
 
-        if int(pid) == produto_id:
-            if tipo == "ENTRADA":
-                saldo += int(qtd)
-            else:
-                saldo -= int(qtd)
+        pid = int(pid)
+        qtd = int(qtd)
 
-    return saldo
+        if pid not in saldos:
+            saldos[pid] = 0
+
+        if tipo == "ENTRADA":
+            saldos[pid] += qtd
+        elif tipo == "SAÍDA":
+            saldos[pid] -= qtd
+
+    return saldos
 
 
 def aplicar_icone(janela):

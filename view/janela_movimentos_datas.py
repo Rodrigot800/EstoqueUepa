@@ -63,7 +63,7 @@ class JanelaMovimentacoes:
 
             self.tabela.insert(
                 "",
-                "end",
+                0,
                 values=(produto_nome, tipo, quantidade, data),
                 tags=(tag,)
             )
