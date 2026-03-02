@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
 from view.janela_produto import JanelaCadastroProduto
 from view.janela_movimento import JanelaMovimentacao
 from view.janela_movimentos_datas import JanelaMovimentacoes
@@ -17,7 +19,6 @@ class TelaPrincipal:
         self.root = root
         self.root.title("Controle de Estoque - Excel")
         self.root.geometry("1080x800")
-        self.root.configure(bg="#f0f0f0")
 
         self.caminho_planilha = None
         self.titulo_var = tk.StringVar()
@@ -27,49 +28,61 @@ class TelaPrincipal:
         self.win_movimento = None
         self.win_movimentos = None
 
-
-        # 🔹 CRIA A INTERFACE PRIMEIRO
+        # Interface
         self.criar_titulo()
         self.criar_barra_superior()
         self.criar_tabela()
         self.criar_botoes()
 
-        # 🔹 DEPOIS carrega a planilha salva
         self.carregar_planilha_salva()
-
-
 
     # ---------------- UI ----------------
 
     def criar_titulo(self):
-        self.titulo_var.set("Controle de Estoque - Nenhuma planilha carregada")
+        header = tb.Frame(self.root, bootstyle="primary")
+        header.pack(fill="x")
 
-        self.label_titulo = tk.Label(
-            self.root,
+        self.titulo_var.set("Controle de Estoque")
+
+        tb.Label(
+            header,
             textvariable=self.titulo_var,
-            font=("Arial", 20, "bold"),
-            bg="#f0f0f0"
-        )
-        self.label_titulo.pack(pady=10)
+            font=("Segoe UI", 24, "bold"),
+            bootstyle="inverse-primary"
+        ).pack(pady=(5, 5))
 
 
-    
     def criar_barra_superior(self):
-        frame = tk.Frame(self.root, bg="#f0f0f0")
-        frame.pack(fill="x", padx=15, pady=5)
+        container = tb.Frame(self.root)
+        container.pack(fill="x", padx=20, pady=(5, 15))
 
-        # Pesquisa
-        tk.Label(frame, text="Pesquisar:", bg="#f0f0f0").pack(side="left")
+        frame = tb.Labelframe(
+            container,
+            text=" 🔧 Filtros e Ações ",
+            bootstyle="secondary"
+        )
+        frame.pack(fill="x")
 
-        self.entry_pesquisa = tk.Entry(frame)
-        self.entry_pesquisa.pack(side="left", fill="x", expand=True, padx=10)
+        # ---- Pesquisa ----
+        tb.Label(
+            frame,
+            text="🔍 Pesquisar",
+            font=("Segoe UI", 10, "bold")
+        ).grid(row=0, column=0, padx=(10,4), pady=10, sticky="w")
+
+        self.entry_pesquisa = tb.Entry(frame, width=120)
+        self.entry_pesquisa.grid(row=0, column=1, padx=10, pady=10, sticky="w")
         self.entry_pesquisa.bind("<KeyRelease>", self.filtrar_e_ordenar)
 
-        # Ordenação
-        tk.Label(frame, text="Ordenar por:", bg="#f0f0f0").pack(side="left", padx=(10, 5))
+        # ---- Ordenação ----
+        tb.Label(
+            frame,
+            text="↕️ Ordenar por",
+            font=("Segoe UI", 10, "bold")
+        ).grid(row=0, column=2, padx=(20, 5), pady=10, sticky="w")
 
         self.ordem_var = tk.StringVar(value="Nome (A-Z)")
-        self.combo_ordem = ttk.Combobox(
+        self.combo_ordem = tb.Combobox(
             frame,
             textvariable=self.ordem_var,
             state="readonly",
@@ -80,31 +93,67 @@ class TelaPrincipal:
                 "Saldo (Maior → Menor)"
             ]
         )
-        self.combo_ordem.pack(side="left", padx=(0, 15))
-        self.combo_ordem.bind("<<ComboboxSelected>>", self.filtrar_e_ordenar)
+        self.combo_ordem.grid(row=0, column=3, padx=5, pady=10)
+        self.combo_ordem.bind("<<ComboboxSelected>>", lambda e: (
+        self.filtrar_e_ordenar(e),
+        self.root.focus()))
+        
+                # ---- Planilha ----
+        tb.Label(
+            frame,
+            text="📂 Planilha",
+            font=("Segoe UI", 10, "bold")
+        ).grid(row=0, column=4, padx=(20, 5), pady=10, sticky="w")
 
-        # -----------------------------
-        # PLANILHA
-        # -----------------------------
-        tk.Label(frame, text="Planilha:", bg="#f0f0f0").pack(side="left")
-
-        self.entry_planilha = tk.Entry(
+        self.entry_planilha = tb.Entry(
             frame,
             textvariable=self.planilha_var,
             state="readonly",
-            width=30
+            width=28
         )
+        self.entry_planilha.grid(row=0, column=5, padx=5, pady=10)
 
-        tk.Button(
+        tb.Button(
             frame,
             text="Selecionar",
+            bootstyle="info-outline",
             command=self.selecionar_planilha
-        ).pack(side="left")
+        ).grid(row=0, column=6, padx=10, pady=10)
 
+        # Ajuste de colunas (responsivo)
+        frame.columnconfigure(1, weight=1)
 
     def criar_tabela(self):
-        frame = tk.Frame(self.root)
-        frame.pack(fill="both", expand=True, padx=15)
+        frame = tb.Frame(self.root)
+        frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        style = tb.Style()
+
+        style.configure(
+            "Treeview.Heading",
+            font=("Segoe UI", 10, "bold"),
+            background="#f8fafc",
+            foreground="#212529",
+            padding=(18, 10),   # padding lateral maior → separação visual
+            relief="flat",      # remove bordas reais
+            borderwidth=0
+        )
+
+        style.configure(
+            "Treeview",
+            rowheight=34,
+            font=("Segoe UI", 12),
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            foreground="#212529"
+        )
+
+
+        style.map(
+            "Treeview",
+            background=[("selected", "#3a88fd")],
+            foreground=[("selected", "#ffffff")]
+        )
 
         self.tabela = ttk.Treeview(
             frame,
@@ -116,15 +165,14 @@ class TelaPrincipal:
         self.tabela.heading("id", text="ID")
         self.tabela.heading("nome", text="Produto")
         self.tabela.heading("saldo", text="Saldo")
-        self.tabela.heading("saidaMes", text="media_saida")
-        self.tabela.heading("entradaMes", text="media_entrada")
+        self.tabela.heading("saidaMes", text="Média Saída")
+        self.tabela.heading("entradaMes", text="Média Entrada")
 
-        self.tabela.column("id", width=20, anchor="center")
-        self.tabela.column("nome", width=250, anchor="sw")
-        self.tabela.column("saldo", width=200, anchor="sw")
-        self.tabela.column("saidaMes", width=200, anchor="sw")
-        self.tabela.column("entradaMes", width=200, anchor="sw")
-
+        self.tabela.column("id", width=60, anchor="center")
+        self.tabela.column("nome", width=300, anchor="w")
+        self.tabela.column("saldo", width=150, anchor="w")
+        self.tabela.column("saidaMes", width=150, anchor="e")
+        self.tabela.column("entradaMes", width=150, anchor="e")
 
         scroll = ttk.Scrollbar(frame, orient="vertical", command=self.tabela.yview)
         self.tabela.configure(yscrollcommand=scroll.set)
@@ -132,34 +180,53 @@ class TelaPrincipal:
         self.tabela.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
 
-        # Zebra
+        # Estilo da tabela
+        style = ttk.Style()
+        style.configure("Treeview", rowheight=30)
+
         self.tabela.tag_configure("BlueRow", background="#E3F2FD")
         self.tabela.tag_configure("WhiteRow", background="#FFFFFF")
 
     def criar_botoes(self):
-        frame = tk.Frame(self.root, bg="#f0f0f0")
-        frame.pack(pady=12)
+        frame = tb.Frame(self.root)
+        frame.pack(pady=18)
 
-        estilo = {"font": ("Arial", 11), "width": 20}
+        estilo = {
+            "width": 22,
+            "padding": (12, 6)
+        }
 
-        tk.Button(frame, text="Cadastrar Produto",
-                  command=self.janela_produto, **estilo).pack(side="left", padx=10)
+        tb.Button(
+            frame,
+            text="Cadastrar Produto",
+            bootstyle="outline-primary",
+            **estilo,
+            command=self.janela_produto
+        ).pack(side="left", padx=8)
 
-        tk.Button(frame, text="Movimentar",
-                  command=self.janela_movimento, **estilo).pack(side="left", padx=10)
+        tb.Button(
+            frame,
+            text="Movimentar",
+            bootstyle="outline-primary",
+            **estilo,
+            command=self.janela_movimento
+        ).pack(side="left", padx=8)
 
-        tk.Button(frame, text="Atualizar",
-                  command=self.carregar, **estilo).pack(side="left", padx=10)
+        tb.Button(
+            frame,
+            text="Atualizar",
+            bootstyle="outline-primary",
+            **estilo,
+            command=self.carregar
+        ).pack(side="left", padx=8)
 
-        tk.Button(
+        tb.Button(
             frame,
             text="Ver Movimentações",
-            command=self.janela_movimentacoes,
-            **estilo
-        ).pack(side="left", padx=10)
-
-
-
+            bootstyle="outline-primary",
+            **estilo,
+            command=self.janela_movimentacoes
+        ).pack(side="left", padx=8)
     # ---------------- Lógica ----------------
 
     def carregar(self):

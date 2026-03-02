@@ -162,23 +162,23 @@ def inserir_produto(nome, unidade, minimo):
     wb.close()
 
 def calcular_saldos():
+    wb = carregar()
+    ws = wb["movimentos"]
+
     saldos = {}
 
-    for _, pid, _, tipo, qtd, _ in listar_movimentos():
-        if pid is None:
-            continue
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        _, produto_id, _, tipo, quantidade, _ = row
 
-        pid = int(pid)
-        qtd = int(qtd)
-
-        if pid not in saldos:
-            saldos[pid] = 0
+        if produto_id not in saldos:
+            saldos[produto_id] = 0
 
         if tipo == "ENTRADA":
-            saldos[pid] += qtd
-        elif tipo == "SAÍDA":
-            saldos[pid] -= qtd
+            saldos[produto_id] += quantidade
+        elif tipo == "SAIDA":
+            saldos[produto_id] -= quantidade  
 
+    wb.close()
     return saldos
 
 
