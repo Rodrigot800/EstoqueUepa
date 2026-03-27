@@ -110,31 +110,61 @@ def listar_movimentos():
     wb.close()
     return movimentos
 
-def registrar_movimento(produto_id, produto_nome, tipo, quantidade):
+def registrar_lista_movimentos(movimentos):
     wb = carregar()
-    ws = wb["movimentos"]
+    ws_mov = wb["movimentos"]
+    ws_prod = wb["produtos"]
 
-    novo_id = ws.max_row
-    data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    saldos = calcular_saldos_interno(ws_mov)
 
-    ws.append([
-        novo_id,
-        produto_id,       # usado para estoque
-        produto_nome,     # usado para histórico
-        tipo,
-        quantidade,
-        data
-    ])
+    for produto_id, produto_nome, tipo, quantidade in movimentos:
+        novo_id = ws_mov.max_row
+        data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        ws_mov.append([
+            novo_id,
+            produto_id,
+            produto_nome,
+            tipo,
+            quantidade,
+            data
+        ])
+
+        # Atualiza saldo em memória
+        if produto_id not in saldos:
+            saldos[produto_id] = 0
+
+        if tipo == "ENTRADA":
+            saldos[produto_id] += quantidade
+        else:
+            saldos[produto_id] -= quantidade
+
+    # Atualiza estoque de TODOS os produtos (uma vez só)
+    for row in ws_prod.iter_rows(min_row=2):
+        pid = row[0].value
+        row[4].value = saldos.get(pid, 0)
 
     wb.save(ARQUIVO)
     wb.close()
 
-    atualizar_estoque_produto(produto_id)
-
-
 # ----------------------------
 # SALDO
 # ----------------------------
+def calcular_saldos_interno(ws_mov):
+    saldos = {}
+
+    for row in ws_mov.iter_rows(min_row=2, values_only=True):
+        _, produto_id, _, tipo, quantidade, _ = row
+
+        if produto_id not in saldos:
+            saldos[produto_id] = 0
+
+        if tipo == "ENTRADA":
+            saldos[produto_id] += quantidade
+        else:
+            saldos[produto_id] -= quantidade
+
+    return saldos
 
 def atualizar_estoque_produto(produto_id):
     wb = carregar()

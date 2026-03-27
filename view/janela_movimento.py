@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from funcsEstoque import listar_produtos, registrar_movimento
+from funcsEstoque import listar_produtos
+from funcsEstoque import registrar_lista_movimentos
+
 
 
 class JanelaMovimentacao:
@@ -194,9 +196,7 @@ class JanelaMovimentacao:
             self.win.after(10, self.focar_janela)
             return
 
-        for mov in self.movimentos:
-            produto_id, produto_nome, tipo, qtd = mov
-            registrar_movimento(produto_id, produto_nome, tipo, qtd)
+        registrar_lista_movimentos(self.movimentos)
 
         messagebox.showinfo("Sucesso", "Movimentações registradas com sucesso!")
 

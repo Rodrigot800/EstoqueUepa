@@ -5,7 +5,7 @@ from ttkbootstrap.constants import *
 from view.janela_produto import JanelaCadastroProduto
 from view.janela_movimento import JanelaMovimentacao
 from view.janela_movimentos_datas import JanelaMovimentacoes
-from funcsEstoque import listar_produtos, calcular_saldos, listar_movimentacoes
+from funcsEstoque import listar_produtos, calcular_saldos
 from config import salvar_caminho_planilha
 from funcsEstoque import set_arquivo
 from funcsEstoque import selecionar_e_preparar_planilha
@@ -35,7 +35,7 @@ class TelaPrincipal:
         self.criar_botoes()
 
         self.carregar_planilha_salva()
-
+       
     # ---------------- UI ----------------
 
     def criar_titulo(self):
@@ -227,12 +227,14 @@ class TelaPrincipal:
             **estilo,
             command=self.janela_movimentacoes
         ).pack(side="left", padx=8)
+        
     # ---------------- Lógica ----------------
 
     def carregar(self):
         self.produtos_lista = listar_produtos() or []
         self.ordem_var.set("Nome (A-Z)")
         self.filtrar_e_ordenar()
+        calcular_saldos() # pré-calcula os saldos para otimizar exibição
 
         
     def selecionar_planilha(self):

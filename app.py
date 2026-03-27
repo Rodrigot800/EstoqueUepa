@@ -19,10 +19,11 @@ if __name__ == "__main__":
     root.mainloop()
 
 
-#  pyinstaller \
+# pyinstaller \
 #   --onefile \
 #   --windowed \
 #   --name EstoqueUEPA \
 #   --icon assets/UepaEstoqueIcone.ico \
 #   --add-data "assets;assets" \
+#   --collect-all ttkbootstrap \
 #   app.py
