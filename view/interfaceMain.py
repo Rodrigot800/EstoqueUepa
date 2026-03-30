@@ -14,6 +14,10 @@ from config import salvar_caminho_planilha
 
 import os
 
+import locale
+
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
 class TelaPrincipal:
     def __init__(self, root):
         self.root = root
@@ -263,7 +267,7 @@ class TelaPrincipal:
 
         # Ordenação
         if ordem == "Nome (A-Z)":
-            lista.sort(key=lambda x: str(x[1]).lower())
+            lista.sort(key=lambda p: locale.strxfrm(str(p[1]).lower()))
 
         elif ordem == "ID":
             lista.sort(key=lambda x: x[0])
