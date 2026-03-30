@@ -153,7 +153,7 @@ class JanelaMovimentacao:
             messagebox.showerror("Erro", "Selecione um produto válido.")
             self.win.after(10, self.focar_janela)
             return
-
+   
         if not self.tipo.get():
             messagebox.showerror("Erro", "Selecione o tipo.")
             self.win.after(10, self.focar_janela)
@@ -196,7 +196,9 @@ class JanelaMovimentacao:
             self.win.after(10, self.focar_janela)
             return
 
-        registrar_lista_movimentos(self.movimentos)
+        if registrar_lista_movimentos(self.movimentos) == False:
+            self.focar_janela()
+            return
 
         messagebox.showinfo("Sucesso", "Movimentações registradas com sucesso!")
 

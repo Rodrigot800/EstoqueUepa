@@ -198,7 +198,9 @@ class JanelaCadastroProduto:
             return
 
         for nome, unidade, qtd_min in self.produtos_temp:
-            inserir_produto(nome, unidade, qtd_min)
+            if inserir_produto(nome, unidade, qtd_min) == False:
+                self.focar_janela()
+                return
 
         messagebox.showinfo("Sucesso", "Produtos cadastrados com sucesso!")
         self.callback_reload()

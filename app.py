@@ -27,3 +27,5 @@ if __name__ == "__main__":
 #   --add-data "assets;assets" \
 #   --collect-all ttkbootstrap \
 #   app.py
+
+# pyinstaller   --onefile   --windowed   --name EstoqueUEPA   --icon assets/UepaEstoqueIcone.ico   --add-data "assets;assets"   --collect-all ttkbootstrap   app.py

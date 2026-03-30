@@ -1,6 +1,7 @@
 from openpyxl import load_workbook,Workbook
 from datetime import datetime
 from tkinter import filedialog
+from tkinter import messagebox
 import os
 
 def selecionar_e_preparar_planilha():
@@ -144,7 +145,11 @@ def registrar_lista_movimentos(movimentos):
         pid = row[0].value
         row[4].value = saldos.get(pid, 0)
 
-    wb.save(ARQUIVO)
+    try:
+        wb.save(ARQUIVO)
+    except PermissionError:
+        messagebox.showerror("Erro", "Não foi possível finalizar. Feche a planilha e tente novamente.")
+        return False
     wb.close()
 
 # ----------------------------
@@ -188,7 +193,11 @@ def inserir_produto(nome, unidade, minimo):
     novo_id = ws.max_row
     ws.append([novo_id, nome, unidade, minimo, 0])  # estoque começa 0
 
-    wb.save(ARQUIVO)
+    try: 
+        wb.save(ARQUIVO)
+    except PermissionError:
+        messagebox.showerror("Erro", "Não foi possível finalizar. Feche a planilha e tente novamente.")
+        return False
     wb.close()
 
 def calcular_saldos():
