@@ -14,3 +14,11 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# Web
+node_modules/
+.env
+.env.*
+!.env.example
+coverage/
+*.log

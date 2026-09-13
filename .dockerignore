@@ -1,0 +1,13 @@
+.git
+.env
+node_modules
+**/node_modules
+**/dist
+venv
+.venv
+*.xlsx
+*.py
+view
+assets
+.agents
+.codex
