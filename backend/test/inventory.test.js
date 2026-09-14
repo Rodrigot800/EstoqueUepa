@@ -89,6 +89,10 @@ test('fluxo de estoque com PostgreSQL real', { skip: !(process.env.DATABASE_URL 
       const movement = (await request('movements',undefined,adm.id)).data[0];
       assert.equal((await request(`movements/${movement.id}`,{type:'ENTRADA',quantity:9},adm.id,'PUT')).status,200);
       assert.equal((await request('movements',{movements:[move('SAIDA',4,product.id)]},adm.id)).status,201);
+      const negativeMovements = await db.query("INSERT INTO movements(product_id,type,quantity) VALUES ($1,'SAIDA',10),($1,'SAIDA',10) RETURNING id", [product.id]);
+      assert.equal((await request(`movements/${negativeMovements.rows[0].id}`,{type:'ENTRADA',quantity:1},adm.id,'PUT')).status,200);
+      assert.ok((await request('products',undefined,adm.id)).data[0].stock < 0);
+      assert.equal((await request(`movements/${movement.id}`,{type:'SAIDA',quantity:1},adm.id,'PUT')).status,409);
       assert.equal((await request(`movements/${movement.id}`,{},adm.id,'DELETE')).status,409);
       assert.equal((await request(`products/${product.id}`,{},adm.id,'DELETE')).status,204);
       assert.equal((await request('products',undefined,adm.id)).data.length,0);

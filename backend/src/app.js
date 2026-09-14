@@ -84,14 +84,19 @@ export function createApp(db, events) {
     const { type, quantity } = movementUpdate.parse(req.body);
     const movementId = integer.positive().parse(Number(req.params.id));
     const result = await transaction(db, async c => {
-      const existing = await c.query(`SELECT m.id,m.product_id FROM movements m JOIN products p ON p.id=m.product_id
+      const existing = await c.query(`SELECT m.id,m.product_id,m.type FROM movements m JOIN products p ON p.id=m.product_id
         WHERE m.id=$1 AND p.warehouse_id=$2 FOR UPDATE OF m,p`, [movementId, req.warehouseId]);
       if (!existing.rowCount) throw new HttpError(404, 'Movimentação não encontrada neste estoque.');
       const productId = existing.rows[0].product_id;
       const balance = await c.query(`SELECT COALESCE(sum(CASE WHEN type='ENTRADA' THEN quantity::bigint ELSE -quantity::bigint END),0)::float8 AS stock
         FROM movements WHERE product_id=$1 AND id<>$2`, [productId, movementId]);
       const stock = balance.rows[0].stock + (type === 'ENTRADA' ? quantity : -quantity);
-      if (stock < 0) throw new HttpError(409, 'A alteração deixaria este produto com saldo negativo.');
+      // A correction from an outgoing movement to an incoming movement must always be
+      // possible, including when the imported/legacy history is already negative.
+      // Only block the inverse correction when it would worsen the balance.
+      if (existing.rows[0].type === 'ENTRADA' && type === 'SAIDA' && stock < 0) {
+        throw new HttpError(409, 'Não é possível transformar esta entrada em saída: o saldo ficaria negativo.');
+      }
       return (await c.query('UPDATE movements SET type=$1,quantity=$2 WHERE id=$3 RETURNING *', [type, quantity, movementId])).rows[0];
     });
     res.json(result);
