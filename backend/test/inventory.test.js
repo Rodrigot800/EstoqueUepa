@@ -23,7 +23,7 @@ test('fluxo de estoque com PostgreSQL real', { skip: !(process.env.DATABASE_URL 
     server = createApp(db).listen(0, '127.0.0.1');
     await new Promise(resolve => server.once('listening',resolve));
     const base = `http://127.0.0.1:${server.address().port}/api/`;
-    async function request(route,body,warehouseId=1) { if (route.startsWith('products') || route.startsWith('movements')) { if(body) body={warehouseId,...body}; else route += (route.includes('?') ? '&' : '?') + `warehouseId=${warehouseId}`; } const r = await fetch(base+route,body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {}); return {status:r.status,data:await r.json()}; }
+    async function request(route,body,warehouseId=1,method=body ? 'POST' : 'GET') { if (route.startsWith('products') || route.startsWith('movements')) { if(body) body={warehouseId,...body}; else route += (route.includes('?') ? '&' : '?') + `warehouseId=${warehouseId}`; } const r = await fetch(base+route,body ? {method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {}); return {status:r.status,data:r.status === 204 ? null : await r.json()}; }
     let id;
     await t.test('cadastro, saldo inicial e rejeição de duplicatas sem salvar lote parcial', async () => {
       const created = await request('products',{products:[{name:'Papel A4',unit:'RESMA',minimum:5}]});
@@ -81,6 +81,24 @@ test('fluxo de estoque com PostgreSQL real', { skip: !(process.env.DATABASE_URL 
       const r = await request('movements?from=2026-02-26&to=2026-02-26&type=ENTRADA');
       assert.equal(r.status,200); assert.equal(r.data.length,1);
       assert.equal((await request('movements?from=2026-02-30')).status,400);
+    });
+    await t.test('permite editar registros e excluir produto com seu histórico', async () => {
+      const adm = (await request('warehouses')).data.find(item => item.name === 'ADM');
+      const product = (await request('products',undefined,adm.id)).data[0];
+      assert.equal((await request(`products/${product.id}`,{name:'Papel A4 ADM',unit:'PACOTE',minimum:2},adm.id,'PUT')).status,200);
+      const movement = (await request('movements',undefined,adm.id)).data[0];
+      assert.equal((await request(`movements/${movement.id}`,{type:'ENTRADA',quantity:9},adm.id,'PUT')).status,200);
+      assert.equal((await request('movements',{movements:[move('SAIDA',4,product.id)]},adm.id)).status,201);
+      assert.equal((await request(`movements/${movement.id}`,{},adm.id,'DELETE')).status,409);
+      assert.equal((await request(`products/${product.id}`,{},adm.id,'DELETE')).status,204);
+      assert.equal((await request('products',undefined,adm.id)).data.length,0);
+      assert.equal((await request('movements',undefined,adm.id)).data.length,0);
+    });
+    await t.test('exclui uma saída sem deixar o saldo negativo', async () => {
+      const movement = (await request('movements')).data.find(item => item.type === 'SAIDA');
+      assert.ok(movement);
+      assert.equal((await request(`movements/${movement.id}`,{},1,'DELETE')).status,204);
+      assert.equal((await request('products')).data[0].stock,9);
     });
   } finally {
     if(server) await new Promise(resolve => server.close(resolve));

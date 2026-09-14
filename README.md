@@ -139,8 +139,12 @@ Os testes de integração usam schema temporário e o removem ao terminar; não 
 | POST | `/api/warehouses` | `{ "name": "ADM" }` |
 | GET | `/api/products?warehouseId=1` | Produtos e saldos do estoque |
 | POST | `/api/products` | `{ "warehouseId": 1, "products": [{ "name": "Papel A4", "unit": "RESMA", "minimum": 5 }] }` |
+| PUT | `/api/products/:id` | Atualiza nome, unidade e estoque mínimo; requer `warehouseId` no corpo |
+| DELETE | `/api/products/:id` | Exclui o produto e todo o seu histórico; requer `warehouseId` no corpo |
 | GET | `/api/movements?warehouseId=1` | Histórico do estoque; aceita `from`, `to` (YYYY-MM-DD), `type` e `productId` |
 | POST | `/api/movements` | `{ "warehouseId": 1, "movements": [{ "productId": 1, "type": "ENTRADA", "quantity": 10 }] }` |
+| PUT | `/api/movements/:id` | Atualiza tipo e quantidade; requer `warehouseId` no corpo |
+| DELETE | `/api/movements/:id` | Exclui uma movimentação sem permitir saldo negativo; requer `warehouseId` no corpo |
 
 `warehouseId` é obrigatório nas consultas e gravações de produtos/movimentos. A API rejeita movimentos de produtos pertencentes a outro estoque. Nomes de estoques são únicos, desconsiderando maiúsculas/minúsculas e espaços nas pontas. A separação organiza os dados por local; não é um controle de permissões por usuário.
 

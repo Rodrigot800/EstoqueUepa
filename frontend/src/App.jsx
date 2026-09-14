@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ProductAutocomplete from './ProductAutocomplete.jsx';
-import { Package, LayoutDashboard, ArrowLeftRight, Plus, Search, RefreshCw, ArrowDownLeft, ArrowUpRight, AlertTriangle, X, Trash2, CheckCircle2 } from 'lucide-react';
+import { Package, LayoutDashboard, ArrowLeftRight, Plus, Search, RefreshCw, ArrowDownLeft, ArrowUpRight, AlertTriangle, X, Trash2, CheckCircle2, Pencil } from 'lucide-react';
 import uepaLogo from '../../assets/UepaEstoqueIcone.png';
 
 const number = n => Number(n).toLocaleString('pt-BR');
 const date = d => new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Belem' });
-async function api(path, body) {
-  const response = await fetch(`/api/${path}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { cache: 'no-store' });
-  const data = await response.json();
+async function api(path, body, method = body ? 'POST' : 'GET') {
+  const response = await fetch(`/api/${path}`, method === 'GET' ? { cache: 'no-store' } : { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const data = response.status === 204 ? null : await response.json();
   if (!response.ok) throw new Error(data.error || 'Não foi possível carregar os dados.');
   return data;
 }
@@ -20,7 +20,7 @@ export default function App() {
   const [page, setPage] = useState('stock'), [products, setProducts] = useState([]), [movements, setMovements] = useState([]);
   const [search, setSearch] = useState(''), [sort, setSort] = useState('name'), [status, setStatus] = useState('all');
   const [filter, setFilter] = useState({ from: '', to: '', type: '', productId: '' });
-  const [modal, setModal] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState(''), [notice, setNotice] = useState('');
+  const [modal, setModal] = useState(null), [editing, setEditing] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const generation = useRef(0);
   const selectedRef = useRef(warehouseId), busyRef = useRef(false), pendingRef = useRef(false), refreshRef = useRef(null);
   async function refresh(requestedId = selectedRef.current, {quiet = false} = {}) {
@@ -87,6 +87,16 @@ export default function App() {
   const month = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Belem' }).slice(0,7);
   const recent = movements.filter(m => new Date(m.occurred_at).toLocaleDateString('en-CA', { timeZone: 'America/Belem' }).startsWith(month));
   const changePage = p => { setPage(p); setSearch(''); };
+  async function remove(kind, record) {
+    const isProduct = kind === 'product';
+    const message = isProduct ? `Excluir “${record.name}” e todo o seu histórico? Esta ação não pode ser desfeita.` : `Excluir a ${record.type === 'ENTRADA' ? 'entrada' : 'saída'} de ${record.product_name}? Esta ação não pode ser desfeita.`;
+    if (!window.confirm(message)) return;
+    try {
+      await api(`${isProduct ? 'products' : 'movements'}/${record.id}`, {warehouseId: activeWarehouse.id}, 'DELETE');
+      setNotice(isProduct ? 'Produto e histórico excluídos com sucesso.' : 'Movimentação excluída com sucesso.');
+      await refresh();
+    } catch (e) { setError(e.message || 'Não foi possível excluir o registro.'); }
+  }
   return <div className="shell">
     <aside className="sidebar"><a className="brand" href="#" onClick={e => { e.preventDefault(); changePage('stock'); }}><img className="brand-logo" src={uepaLogo} alt="Estoque UEPA"/><span>Estoque<span className="brand-sub">UEPA</span></span></a>
       <div className="warehouse-picker"><label htmlFor="warehouse-select">ESTOQUE ATUAL</label><select id="warehouse-select" value={warehouseId} onChange={e => selectWarehouse(e.target.value)} disabled={!warehouses.length}>{!warehouses.length && <option value="">Carregando…</option>}{warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select><button className="secondary action-blue" onClick={() => setModal('warehouse')}><Plus size={16}/> Adicionar estoque</button></div><p className="nav-label">GESTÃO DE MATERIAIS</p>
@@ -104,13 +114,15 @@ export default function App() {
           {page === 'stock' ? <><select aria-label="Situação do estoque" value={status} onChange={e => setStatus(e.target.value)}><option value="all">Todas as situações</option><option value="low">Precisam de atenção</option><option value="available">Disponíveis</option></select><select aria-label="Ordenar produtos" value={sort} onChange={e => setSort(e.target.value)}><option value="name">Nome (A–Z)</option><option value="id">Código do produto</option><option value="stock">Maior saldo</option></select></> : <><label className="date-filter">De<input aria-label="Data inicial" type="date" value={filter.from} onChange={e => setFilter({...filter, from: e.target.value})}/></label><label className="date-filter">Até<input aria-label="Data final" type="date" value={filter.to} onChange={e => setFilter({...filter, to: e.target.value})}/></label><select aria-label="Tipo de movimentação" value={filter.type} onChange={e => setFilter({...filter, type: e.target.value})}><option value="">Todos os tipos</option><option value="ENTRADA">Entrada</option><option value="SAIDA">Saída</option></select></>}
         </div>
         {badRange && page === 'history' && <p className="inline-error" role="alert">A data inicial deve ser anterior à data final.</p>}
-        <div className="table-wrap" aria-busy={loading}>{page === 'stock' ? <table><thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>UNIDADE</th><th className="numeric">ESTOQUE MÍNIMO</th><th className="numeric">SALDO ATUAL</th><th>SITUAÇÃO</th></tr></thead><tbody>{filteredProducts.map(p => <tr key={p.id}><td className="muted">#{String(p.id).padStart(3,'0')}</td><td><span className="product-cell"><span className="product-icon"><Package size={18}/></span><strong>{p.name}</strong></span></td><td>{p.unit}</td><td className="numeric muted">{number(p.minimum)}</td><td className="numeric balance">{number(p.stock)}</td><td><Status p={p}/></td></tr>)}</tbody></table> : <table><thead><tr><th>DATA E HORA</th><th>PRODUTO</th><th>TIPO</th><th className="numeric">QUANTIDADE</th><th>UNIDADE</th></tr></thead><tbody>{filteredMovements.map(m => <tr key={m.id}><td className="muted">{date(m.occurred_at)}</td><td><strong>{m.product_name}</strong></td><td><span className={`badge ${m.type === 'ENTRADA' ? 'success' : 'outgoing'}`}>{m.type === 'ENTRADA' ? <ArrowDownLeft size={14}/> : <ArrowUpRight size={14}/>} {m.type === 'ENTRADA' ? 'Entrada' : 'Saída'}</span></td><td className="numeric balance">{number(m.quantity)}</td><td>{m.unit}</td></tr>)}</tbody></table>}
+        <div className="table-wrap" aria-busy={loading}>{page === 'stock' ? <table><thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>UNIDADE</th><th className="numeric">ESTOQUE MÍNIMO</th><th className="numeric">SALDO ATUAL</th><th>SITUAÇÃO</th><th className="actions-column">AÇÕES</th></tr></thead><tbody>{filteredProducts.map(p => <tr key={p.id}><td className="muted">#{String(p.id).padStart(3,'0')}</td><td><span className="product-cell"><span className="product-icon"><Package size={18}/></span><strong>{p.name}</strong></span></td><td>{p.unit}</td><td className="numeric muted">{number(p.minimum)}</td><td className="numeric balance">{number(p.stock)}</td><td><Status p={p}/></td><td><span className="row-actions"><button className="icon-button edit-button" title="Editar produto" aria-label={`Editar ${p.name}`} onClick={() => setEditing({kind:'product', record:p})}><Pencil size={16}/></button><button className="icon-button delete-button" title="Excluir produto" aria-label={`Excluir ${p.name}`} onClick={() => remove('product',p)}><Trash2 size={16}/></button></span></td></tr>)}</tbody></table> : <table><thead><tr><th>DATA E HORA</th><th>PRODUTO</th><th>TIPO</th><th className="numeric">QUANTIDADE</th><th>UNIDADE</th><th className="actions-column">AÇÕES</th></tr></thead><tbody>{filteredMovements.map(m => <tr key={m.id}><td className="muted">{date(m.occurred_at)}</td><td><strong>{m.product_name}</strong></td><td><span className={`badge ${m.type === 'ENTRADA' ? 'success' : 'outgoing'}`}>{m.type === 'ENTRADA' ? <ArrowDownLeft size={14}/> : <ArrowUpRight size={14}/>} {m.type === 'ENTRADA' ? 'Entrada' : 'Saída'}</span></td><td className="numeric balance">{number(m.quantity)}</td><td>{m.unit}</td><td><span className="row-actions"><button className="icon-button edit-button" title="Editar movimentação" aria-label={`Editar movimentação de ${m.product_name}`} onClick={() => setEditing({kind:'movement', record:m})}><Pencil size={16}/></button><button className="icon-button delete-button" title="Excluir movimentação" aria-label={`Excluir movimentação de ${m.product_name}`} onClick={() => remove('movement',m)}><Trash2 size={16}/></button></span></td></tr>)}</tbody></table>}
         {!loading && !error && !(page === 'stock' ? filteredProducts : filteredMovements).length && <div className="empty"><Package size={36}/><h3>{search || status !== 'all' || page === 'history' ? 'Nenhum registro encontrado' : 'Seu estoque começa aqui'}</h3><p>{products.length ? 'Cadastre novos itens ou ajuste os filtros para ver outros resultados.' : 'Cadastre seu primeiro produto para começar a registrar entradas e saídas.'}</p>{!products.length && <button className="primary" onClick={() => setModal('product')}><Plus size={16}/> Cadastrar produtos</button>}</div>}
         {loading && <div className="loading" role="status">Carregando estoque…</div>}</div><div className="table-footer">{number((page === 'stock' ? filteredProducts : filteredMovements).length)} registros <span>Horário de Belém (PA)</span></div>
       </section><footer className="page-footer">Estoque UEPA <span>Organização para o dia a dia.</span></footer>
     </main></div>
     {modal === 'warehouse' && <WarehouseModal onClose={() => setModal(null)} onSaved={w => { setWarehouses(list => [...list,w]); selectWarehouse(w.id); setNotice(`Estoque “${w.name}” criado com sucesso.`); }}/ >}
     {modal && modal !== 'warehouse' && activeWarehouse && <BatchModal kind={modal} warehouse={activeWarehouse} products={products} onClose={() => setModal(null)} onSaved={async () => { setModal(null); setNotice('Lista registrada com sucesso.'); await refresh(); }}/ >}
+    {editing?.kind === 'product' && <EditProductModal product={editing.record} warehouse={activeWarehouse} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); setNotice('Produto atualizado com sucesso.'); await refresh(); }}/>} 
+    {editing?.kind === 'movement' && <EditMovementModal movement={editing.record} warehouse={activeWarehouse} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); setNotice('Movimentação atualizada com sucesso.'); await refresh(); }}/>} 
   </div>;
 }
 function Stat({title,value,label,icon,warm}) { return <article className="stat"><div><span>{title}</span><strong>{number(value)}</strong><small>{label}</small></div><span className={`stat-icon ${warm ? 'warm' : ''}`}>{icon}</span></article>; }
@@ -149,6 +161,36 @@ function BatchModal({kind, warehouse, products, onClose, onSaved}) {
     <div className="batch-heading">Itens para registrar <span>{items.length}/100</span></div><div className="batch-items">{!items.length ? <p className="muted">Os itens adicionados aparecerão aqui.</p> : items.map((item,i) => <div className="batch-item" key={i}><div><strong>{isProduct ? item.name : products.find(p => p.id === item.productId)?.name}</strong><small>{isProduct ? `${item.unit} · mínimo ${item.minimum}` : `${item.type === 'ENTRADA' ? 'Entrada' : 'Saída'} · ${item.quantity}`}</small></div><button className="icon-button" aria-label={`Remover item ${i+1}`} disabled={saving} onClick={() => setItems(items.filter((_,j) => j !== i))}><Trash2 size={17}/></button></div>)}</div>
     <div className="modal-footer"><button className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button className={`primary ${isProduct ? 'action-green' : items.some(item => item.type === 'SAIDA') ? 'action-red' : 'action-green'}`} disabled={!items.length || saving} onClick={save}>{saving ? 'Salvando…' : `Salvar lista (${items.length})`}</button></div>
   </dialog>;
+}
+
+function EditProductModal({product, warehouse, onClose, onSaved}) {
+  const dialog = useRef(null);
+  const [draft, setDraft] = useState({name:product.name, unit:product.unit, minimum:product.minimum}), [saving, setSaving] = useState(false), [error, setError] = useState('');
+  useEffect(() => { const d = dialog.current; d.showModal(); return () => d.close(); }, []);
+  async function save(e) {
+    e.preventDefault();
+    const minimum = Number(draft.minimum);
+    if (!draft.name.trim() || !draft.unit.trim() || !Number.isInteger(minimum) || minimum < 0) { setError('Preencha nome, unidade e estoque mínimo válido.'); return; }
+    setSaving(true); setError('');
+    try { await api(`products/${product.id}`, {warehouseId:warehouse.id, name:draft.name.trim(), unit:draft.unit.trim(), minimum}, 'PUT'); await onSaved(); }
+    catch (e) { setError(e.message); setSaving(false); }
+  }
+  return <dialog ref={dialog} aria-labelledby="edit-product-title" onCancel={e => { e.preventDefault(); if (!saving) onClose(); }}><div className="modal-header"><div><p className="eyebrow">CATÁLOGO DE MATERIAIS</p><h2 id="edit-product-title">Editar produto</h2></div><button className="icon-button" aria-label="Fechar" onClick={onClose} disabled={saving}><X size={22}/></button></div><form onSubmit={save}><fieldset disabled={saving}><label>Nome do produto<input autoFocus required maxLength={180} value={draft.name} onChange={e => setDraft({...draft,name:e.target.value})}/></label><div className="form-row"><label>Unidade<input required maxLength={30} value={draft.unit} onChange={e => setDraft({...draft,unit:e.target.value})}/></label><label>Estoque mínimo<input required type="number" min="0" max="2147483647" step="1" value={draft.minimum} onChange={e => setDraft({...draft,minimum:e.target.value})}/></label></div></fieldset>{error && <div className="message error" role="alert">{error}</div>}<div className="modal-footer"><button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button className="primary action-green" type="submit" disabled={saving}>{saving ? 'Salvando…' : 'Salvar alterações'}</button></div></form></dialog>;
+}
+
+function EditMovementModal({movement, warehouse, onClose, onSaved}) {
+  const dialog = useRef(null);
+  const [draft, setDraft] = useState({type:movement.type, quantity:movement.quantity}), [saving, setSaving] = useState(false), [error, setError] = useState('');
+  useEffect(() => { const d = dialog.current; d.showModal(); return () => d.close(); }, []);
+  async function save(e) {
+    e.preventDefault();
+    const quantity = Number(draft.quantity);
+    if (!Number.isInteger(quantity) || quantity <= 0) { setError('Informe uma quantidade inteira positiva.'); return; }
+    setSaving(true); setError('');
+    try { await api(`movements/${movement.id}`, {warehouseId:warehouse.id, type:draft.type, quantity}, 'PUT'); await onSaved(); }
+    catch (e) { setError(e.message); setSaving(false); }
+  }
+  return <dialog ref={dialog} aria-labelledby="edit-movement-title" onCancel={e => { e.preventDefault(); if (!saving) onClose(); }}><div className="modal-header"><div><p className="eyebrow">HISTÓRICO DE MOVIMENTAÇÕES</p><h2 id="edit-movement-title">Editar movimentação</h2></div><button className="icon-button" aria-label="Fechar" onClick={onClose} disabled={saving}><X size={22}/></button></div><p className="modal-intro">Produto: <strong>{movement.product_name}</strong>. A data do registro é mantida.</p><form onSubmit={save}><fieldset disabled={saving}><div className="form-row"><label>Tipo<select value={draft.type} onChange={e => setDraft({...draft,type:e.target.value})}><option value="ENTRADA">Entrada</option><option value="SAIDA">Saída</option></select></label><label>Quantidade<input required type="number" min="1" max="2147483647" step="1" value={draft.quantity} onChange={e => setDraft({...draft,quantity:e.target.value})}/></label></div></fieldset>{error && <div className="message error" role="alert">{error}</div>}<div className="modal-footer"><button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button className={`primary ${draft.type === 'ENTRADA' ? 'action-green' : 'action-red'}`} type="submit" disabled={saving}>{saving ? 'Salvando…' : 'Salvar alterações'}</button></div></form></dialog>;
 }
 
 function WarehouseModal({onClose, onSaved}) {

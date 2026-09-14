@@ -29,3 +29,4 @@ nav button{color:#d8edf9}nav button:hover:not(:disabled){background:#ffffff18}na
 dialog{border-color:#bfd5e5;color:var(--uepa-ink);box-shadow:0 30px 90px #002b4f30}dialog::backdrop{background:#003d6b70}.batch-heading{border-top-color:var(--uepa-line)}.batch-item{border-color:#d4e3ee}.product-suggestions li:hover,.product-suggestions li[aria-selected=true]{background:var(--uepa-blue-soft)}
 @media(max-width:800px){.sidebar{background:linear-gradient(120deg,#173e72,#245b93)}.brand-logo{width:42px;height:42px}.secondary-logo{display:none}}
 .page-actions{justify-content:flex-end;margin-bottom:24px}
+.actions-column{text-align:center}.row-actions{display:flex;justify-content:center;gap:6px}.edit-button{color:var(--uepa-blue);border-color:#bdd4e6}.delete-button{color:var(--uepa-red);border-color:#efc5c1}.edit-button:hover:not(:disabled){background:var(--uepa-blue-soft)}.delete-button:hover:not(:disabled){background:var(--uepa-red-soft)}
