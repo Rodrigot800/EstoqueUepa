@@ -6,6 +6,7 @@ COPY frontend/package.json frontend/package.json
 RUN npm ci
 COPY backend backend
 COPY frontend frontend
+COPY assets assets
 
 FROM dependencies AS web-build
 RUN npm run build

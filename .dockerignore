@@ -8,6 +8,5 @@ venv
 *.xlsx
 *.py
 view
-assets
 .agents
 .codex
