@@ -19,7 +19,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Abra http://localhost:8080. `WEB_PORT` permite mudar a porta.
+Abra http://localhost:8080 no servidor ou `http://IP_DA_MAQUINA:8080` nos outros computadores da rede. `WEB_PORT` permite mudar a porta. A API e os eventos usam caminhos relativos (`/api`), portanto não há IP fixado no código. Se o endereço da máquina mudar, use o novo IP no navegador; nenhuma reconstrução da aplicação é necessária. Para manter também a URL constante, configure um nome DNS na rede ou reserva DHCP no roteador.
 
 ```bash
 docker compose ps
@@ -29,7 +29,34 @@ docker compose down
 
 `docker compose down` preserva o banco. **Não use `down -v` se quiser manter os dados**, pois essa opção remove o volume.
 
-O sistema mantém o modelo de acesso do Python: não há autenticação nem perfis de usuário. Por padrão, a porta fica acessível apenas no computador local (`127.0.0.1`). Para acesso em rede interna, defina `BIND_ADDRESS=0.0.0.0` e recrie o serviço web. Antes de exposição pública, implemente autenticação, autorização e HTTPS. A API e o banco não publicam portas no host.
+O sistema mantém o modelo de acesso do Python: não há autenticação nem perfis de usuário. `BIND_ADDRESS=0.0.0.0` disponibiliza a aplicação em todas as interfaces IPv4 da máquina, incluindo localhost e a rede local. `DB_BIND_ADDRESS=0.0.0.0` faz o mesmo com o banco, protegido pela senha. A API é acessada pelo Nginx, sem porta própria no host. Antes de exposição pública, implemente autenticação, autorização e HTTPS. Para restringir o acesso ao computador local, altere os endereços de bind para `127.0.0.1`.
+
+## Conectar pelo DBeaver
+
+Crie uma conexão PostgreSQL com os seguintes dados:
+
+| Campo | Mesmo computador | Outro computador da rede |
+| --- | --- | --- |
+| Host | `localhost` ou `127.0.0.1` | IP atual da máquina que executa o Docker |
+| Porta | `5434` | `5434` |
+| Banco | `estoque` | `estoque` |
+| Usuário | `estoque` | `estoque` |
+| Senha | Valor de `POSTGRES_PASSWORD` no `.env` | O mesmo valor |
+
+Use somente o valor da senha, sem `POSTGRES_PASSWORD=` e sem aspas delimitadoras. Clique em **Testar conexão** e instale o driver quando solicitado. As tabelas estão no schema `public`.
+
+A porta do host é definida por `DB_PORT` (padrão `5434`); dentro do Docker o PostgreSQL continua em `5432`. A porta `5433` deste computador já era usada pelo banco `hydrazil_db`, de outro projeto. Conectar a ela com as credenciais do Estoque UEPA resulta em erro de autenticação.
+
+```bash
+# Testa as credenciais do .env sem imprimir a senha:
+docker compose run --rm --no-deps api npm run db:check -w backend
+# Confere quais portas este projeto publicou:
+docker compose ps
+```
+
+A senha passa à API por `PGPASSWORD`, sem composição de URL; caracteres especiais não precisam ser codificados. Em instalações já inicializadas, editar somente `POSTGRES_PASSWORD` no `.env` não muda a senha gravada no volume PostgreSQL. Para trocar a senha, execute `docker compose exec db psql -U estoque -d estoque`, use `\password estoque`, atualize o `.env` com o mesmo valor e recrie os serviços com `docker compose up -d`. Não apague o volume para corrigir autenticação.
+
+Caso o acesso funcione no servidor mas não em outra máquina, confira se ambos estão na mesma rede e se o firewall permite TCP 8080 (sistema) e 5434 (DBeaver). Não é necessário alterar o IP da rede Docker nem configurar IP estático para os contêineres.
 
 ## Funcionalidades
 
@@ -42,6 +69,17 @@ O sistema mantém o modelo de acesso do Python: não há autenticação nem perf
 - Histórico com busca por produto, tipo e intervalo de datas inclusivo, no fuso de Belém.
 - Indicadores de produtos, reposição e número de entradas/saídas no mês.
 - Mensagens de erro, estados vazios e interface adaptada para celulares.
+- Atualização em tempo real nos navegadores abertos após cadastros e movimentações, preservando filtros e rascunhos em andamento.
+
+## Atualização entre usuários
+
+Triggers do PostgreSQL publicam eventos somente depois que a transação é confirmada. Cada API recebe os eventos por `LISTEN/NOTIFY` e os repassa aos navegadores por Server-Sent Events (`/api/events`). Isso também cobre alterações confirmadas pelo DBeaver, importações e múltiplas instâncias da API. Transações desfeitas não publicam alterações.
+
+Os clientes buscam novamente os dados do estoque selecionado, sem recarregar a página ou apagar o formulário aberto. O PostgreSQL continua validando o saldo no momento da gravação: se outro usuário retirar o material enquanto um formulário está aberto, uma saída sem saldo será recusada.
+
+Há reconexão automática, nova consulta ao recuperar a conexão ou retornar à aba e uma consulta de segurança a cada 15 segundos. O indicador mostra se a conexão de eventos está ativa. Atualizações automáticas são de **dados**; alterações no código ainda exigem `docker compose up -d --build`.
+
+Referências: [NOTIFY e confirmação de transações](https://www.postgresql.org/docs/current/sql-notify.htm) e [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events).
 
 Os lotes são transacionais: se um item falhar, nada é salvo. Produtos são bloqueados em ordem de ID durante a gravação de movimentos para impedir que retiradas simultâneas consumam o mesmo saldo. Novas movimentações exigem quantidades inteiras positivas e não podem resultar em saldo negativo. Produtos começam com saldo zero; registre uma entrada para adicionar estoque.
 
@@ -89,13 +127,14 @@ npm test
 docker compose exec api npm test
 ```
 
-Os testes de integração usam schema temporário e o removem ao terminar; não alteram os produtos do sistema. Cobrem duplicatas, validação, rollback, filtros de datas e concorrência. Sem `DATABASE_URL`, a integração é marcada como ignorada.
+Os testes de integração usam schema temporário e o removem ao terminar; não alteram os produtos do sistema. Cobrem duplicatas, validação, rollback, filtros, concorrência, migração, isolamento entre estoques, eventos para clientes de duas APIs, SQL direto e reconexão do listener. Sem `DATABASE_URL` ou `PGHOST`, a integração é marcada como ignorada.
 
 ## API
 
 | Método | Rota | Uso |
 | --- | --- | --- |
 | GET | `/api/health` | Disponibilidade da API e do banco |
+| GET | `/api/events` | Eventos SSE: `ready`, `change` e `status` |
 | GET | `/api/warehouses` | Lista estoques |
 | POST | `/api/warehouses` | `{ "name": "ADM" }` |
 | GET | `/api/products?warehouseId=1` | Produtos e saldos do estoque |

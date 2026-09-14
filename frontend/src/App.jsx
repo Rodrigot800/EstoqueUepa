@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import ProductAutocomplete from './ProductAutocomplete.jsx';
 import { Package, LayoutDashboard, ArrowLeftRight, Plus, Search, RefreshCw, ArrowDownLeft, ArrowUpRight, AlertTriangle, X, Trash2, CheckCircle2, Boxes } from 'lucide-react';
 
 const number = n => Number(n).toLocaleString('pt-BR');
 const date = d => new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Belem' });
 async function api(path, body) {
-  const response = await fetch(`/api/${path}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+  const response = await fetch(`/api/${path}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { cache: 'no-store' });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Não foi possível carregar os dados.');
   return data;
@@ -19,24 +20,61 @@ export default function App() {
   const [search, setSearch] = useState(''), [sort, setSort] = useState('name'), [status, setStatus] = useState('all');
   const [filter, setFilter] = useState({ from: '', to: '', type: '', productId: '' });
   const [modal, setModal] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState(''), [notice, setNotice] = useState('');
+  const [live, setLive] = useState(false);
   const generation = useRef(0);
-  async function refresh(requestedId = warehouseId) {
+  const selectedRef = useRef(warehouseId), busyRef = useRef(false), pendingRef = useRef(false), refreshRef = useRef(null);
+  async function refresh(requestedId = selectedRef.current, {quiet = false} = {}) {
+    if (quiet && busyRef.current) { pendingRef.current = true; return; }
     const current = ++generation.current;
-    setLoading(true); setError(''); setProducts([]); setMovements([]);
+    busyRef.current = true;
+    if (!quiet) { setLoading(true); setError(''); setProducts([]); setMovements([]); }
     try {
       const list = await api('warehouses');
       if (current !== generation.current) return;
       const selected = list.find(w => String(w.id) === String(requestedId)) || list[0];
       if (!selected) throw new Error('Crie um estoque para começar.');
+      if (requestedId && String(selected.id) !== String(requestedId)) setModal(null);
+      selectedRef.current = String(selected.id);
       setWarehouses(list); setWarehouseId(String(selected.id));
       try { localStorage.setItem('warehouseId', String(selected.id)); } catch { /* Storage may be unavailable. */ }
       const [p,m] = await Promise.all([api(`products?warehouseId=${selected.id}`), api(`movements?warehouseId=${selected.id}`)]);
-      if (current === generation.current) { setProducts(p); setMovements(m); }
+      if (current === generation.current) { setProducts(p); setMovements(m); setError(''); }
     } catch (e) { if (current === generation.current) setError(e.message || 'Sem conexão com o servidor.'); }
-    finally { if (current === generation.current) setLoading(false); }
+    finally {
+      if (current === generation.current) {
+        busyRef.current = false; setLoading(false);
+        if (pendingRef.current) { pendingRef.current = false; queueMicrotask(() => refreshRef.current(undefined, {quiet: true})); }
+      }
+    }
   }
+  refreshRef.current = refresh;
   useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    let timer;
+    const schedule = () => {
+      if (timer) return;
+      timer = setTimeout(() => { timer = undefined; refreshRef.current(undefined, {quiet: true}); }, 150);
+    };
+    const source = new EventSource('/api/events');
+    const status = event => { try { setLive(JSON.parse(event.data).online === true); } catch { setLive(false); } };
+    source.addEventListener('ready', event => { status(event); schedule(); });
+    source.addEventListener('change', schedule);
+    source.addEventListener('status', status);
+    source.onerror = () => setLive(false);
+    // Recover missed events after sleep/network loss; polling also works if SSE is blocked.
+    const fallback = setInterval(schedule, 15000);
+    const onVisible = () => { if (document.visibilityState === 'visible') schedule(); };
+    window.addEventListener('online', schedule);
+    window.addEventListener('focus', schedule);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      source.close(); clearTimeout(timer); clearInterval(fallback);
+      window.removeEventListener('online', schedule); window.removeEventListener('focus', schedule);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
   function selectWarehouse(id) {
+    selectedRef.current = String(id);
     setWarehouseId(String(id)); setSearch(''); setStatus('all'); setSort('name');
     setFilter({ from: '', to: '', type: '', productId: '' }); setModal(null); setNotice('');
     refresh(String(id));
@@ -60,7 +98,7 @@ export default function App() {
     </aside>
     <div className="workspace"><header className="topbar"><span className="breadcrumb"><span className="warehouse-name" title={activeWarehouse?.name}>{activeWarehouse?.name || 'Almoxarifado'}</span><span className="slash">/</span> <strong>{page === 'stock' ? 'Visão do estoque' : 'Movimentações'}</strong></span><span className="institution">UEPA <span className="avatar">UE</span></span></header>
     <main><div className="page-heading"><div><p className="eyebrow">CONTROLE DE ESTOQUE</p><h1>{page === 'stock' ? 'Tudo em seu lugar.' : 'Histórico de movimentações'}</h1><p>{page === 'stock' ? 'Acompanhe seus materiais e mantenha o estoque em dia.' : 'Consulte as entradas e saídas de materiais do almoxarifado.'}</p></div><button className="primary" onClick={() => setModal('movement')} disabled={loading || !products.length}><ArrowLeftRight size={17}/> Nova movimentação</button></div>
-      <p className="warehouse-context">Produtos e movimentações de <strong>{activeWarehouse?.name || 'seu estoque'}</strong></p>
+      <div className="warehouse-context"><span>Produtos e movimentações de <strong>{activeWarehouse?.name || 'seu estoque'}</strong></span><span className={`sync-status ${live ? 'connected' : ''}`} role="status">{live ? '● Atualização em tempo real' : '○ Reconectando · consulta automática a cada 15s'}</span></div>
       {error && <div className="message error" role="alert">{error}<button onClick={() => refresh()}>Tentar novamente</button></div>}
       {notice && <div className="message success-message" role="status"><CheckCircle2 size={18}/>{notice}</div>}
       <div className="stats"><Stat title="Produtos cadastrados" value={products.length} label="Materiais no catálogo" icon={<Package/>}/><Stat title="Precisam de atenção" value={low} label="Estoque baixo ou indisponível" icon={<AlertTriangle/>} warm/><Stat title="Entradas neste mês" value={recent.filter(m => m.type === 'ENTRADA').length} label="Movimentações de recebimento" icon={<ArrowDownLeft/>}/><Stat title="Saídas neste mês" value={recent.filter(m => m.type === 'SAIDA').length} label="Movimentações de retirada" icon={<ArrowUpRight/>}/></div>
@@ -86,6 +124,7 @@ function BatchModal({kind, warehouse, products, onClose, onSaved}) {
   const [items, setItems] = useState([]), [error, setError] = useState(''), [saving, setSaving] = useState(false);
   const empty = isProduct ? {name:'',unit:'UN',minimum:0} : {productId:'',type:'ENTRADA',quantity:1};
   const [draft, setDraft] = useState(empty);
+  const [productQuery, setProductQuery] = useState('');
   useEffect(() => { const d = dialog.current; d.showModal(); return () => d.close(); }, []);
   const field = (key,value) => setDraft({...draft,[key]:value});
   function add(e) {
@@ -98,10 +137,10 @@ function BatchModal({kind, warehouse, products, onClose, onSaved}) {
       setItems([...items,{name,unit,minimum}]);
     } else {
       const productId = Number(draft.productId), quantity = Number(draft.quantity);
-      if (!productId || !Number.isInteger(quantity) || quantity <= 0 || quantity > 2147483647) { setError('Escolha um produto e uma quantidade inteira positiva.'); return; }
+      if (!products.some(p => p.id === productId) || !Number.isInteger(quantity) || quantity <= 0 || quantity > 2147483647) { setError('Escolha um produto e uma quantidade inteira positiva.'); return; }
       setItems([...items,{productId,type:draft.type,quantity}]);
     }
-    setDraft(empty);
+    setDraft(empty); setProductQuery('');
   }
   async function save() {
     setSaving(true); setError('');
@@ -109,7 +148,7 @@ function BatchModal({kind, warehouse, products, onClose, onSaved}) {
     catch (e) { setError(e.message); setSaving(false); }
   }
   return <dialog ref={dialog} onCancel={e => { e.preventDefault(); if (!saving) onClose(); }} aria-labelledby="modal-title"><div className="modal-header"><div><p className="eyebrow">{isProduct ? 'CATÁLOGO DE MATERIAIS' : 'CONTROLE DE SALDO'}</p><h2 id="modal-title">{isProduct ? 'Cadastrar produtos' : 'Nova movimentação'}</h2></div><button className="icon-button" aria-label="Fechar" onClick={onClose} disabled={saving}><X size={22}/></button></div><p className="modal-intro">Estoque: <strong>{warehouse.name}</strong>. Adicione os itens à lista, confira e salve tudo de uma vez.</p>
-    <form onSubmit={add}><fieldset disabled={saving}>{isProduct ? <><label>Nome do produto<input autoFocus required maxLength={180} value={draft.name} onChange={e => field('name',e.target.value)} placeholder="Ex.: Papel A4"/></label><div className="form-row"><label>Unidade<input required maxLength={30} value={draft.unit} onChange={e => field('unit',e.target.value)} list="units"/><datalist id="units">{['UN','CX','KG','L','PCT','RESMA'].map(u => <option key={u}>{u}</option>)}</datalist></label><label>Estoque mínimo<input required type="number" min="0" max="2147483647" step="1" value={draft.minimum} onChange={e => field('minimum',e.target.value)}/></label></div></> : <><label>Produto<select autoFocus required value={draft.productId} onChange={e => field('productId',e.target.value)}><option value="">Selecione um produto</option>{products.map(p => <option key={p.id} value={p.id}>{p.name} — saldo: {number(p.stock)} {p.unit}</option>)}</select></label><div className="form-row"><label>Tipo<select value={draft.type} onChange={e => field('type',e.target.value)}><option value="ENTRADA">Entrada</option><option value="SAIDA">Saída</option></select></label><label>Quantidade<input required type="number" min="1" max="2147483647" step="1" value={draft.quantity} onChange={e => field('quantity',e.target.value)}/></label></div></>}<button type="submit" className="secondary"><Plus size={17}/> Adicionar à lista</button></fieldset></form>
+    <form onSubmit={add}><fieldset disabled={saving}>{isProduct ? <><label>Nome do produto<input autoFocus required maxLength={180} value={draft.name} onChange={e => field('name',e.target.value)} placeholder="Ex.: Papel A4"/></label><div className="form-row"><label>Unidade<input required maxLength={30} value={draft.unit} onChange={e => field('unit',e.target.value)} list="units"/><datalist id="units">{['UN','CX','KG','L','PCT','RESMA'].map(u => <option key={u}>{u}</option>)}</datalist></label><label>Estoque mínimo<input required type="number" min="0" max="2147483647" step="1" value={draft.minimum} onChange={e => field('minimum',e.target.value)}/></label></div></> : <><ProductAutocomplete products={products} query={productQuery} onQuery={value => { setProductQuery(value); field('productId',''); }} onSelect={product => { setProductQuery(product.name); field('productId',product.id); }}/><div className="form-row"><label>Tipo<select value={draft.type} onChange={e => field('type',e.target.value)}><option value="ENTRADA">Entrada</option><option value="SAIDA">Saída</option></select></label><label>Quantidade<input required type="number" min="1" max="2147483647" step="1" value={draft.quantity} onChange={e => field('quantity',e.target.value)}/></label></div></>}<button type="submit" className="secondary"><Plus size={17}/> Adicionar à lista</button></fieldset></form>
     {error && <div className="message error" role="alert">{error}</div>}
     <div className="batch-heading">Itens para registrar <span>{items.length}/100</span></div><div className="batch-items">{!items.length ? <p className="muted">Os itens adicionados aparecerão aqui.</p> : items.map((item,i) => <div className="batch-item" key={i}><div><strong>{isProduct ? item.name : products.find(p => p.id === item.productId)?.name}</strong><small>{isProduct ? `${item.unit} · mínimo ${item.minimum}` : `${item.type === 'ENTRADA' ? 'Entrada' : 'Saída'} · ${item.quantity}`}</small></div><button className="icon-button" aria-label={`Remover item ${i+1}`} disabled={saving} onClick={() => setItems(items.filter((_,j) => j !== i))}><Trash2 size={17}/></button></div>)}</div>
     <div className="modal-footer"><button className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button className="primary" disabled={!items.length || saving} onClick={save}>{saving ? 'Salvando…' : `Salvar lista (${items.length})`}</button></div>

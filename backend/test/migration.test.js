@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import pg from 'pg';
 import { migrate } from '../src/db.js';
 
-test('migração preserva produtos e movimentos existentes no Estoque geral', {skip: !process.env.DATABASE_URL}, async () => {
+test('migração preserva produtos e movimentos existentes no Estoque geral', {skip: !(process.env.DATABASE_URL || process.env.PGHOST)}, async () => {
   const schema = `migration_${Date.now()}`;
   const admin = new pg.Pool({connectionString:process.env.DATABASE_URL});
   await admin.query(`CREATE SCHEMA ${schema}`);

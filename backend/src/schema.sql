@@ -27,4 +27,18 @@ CREATE TABLE IF NOT EXISTS movements (
 );
 CREATE INDEX IF NOT EXISTS movements_product_date ON movements(product_id, occurred_at DESC);
 CREATE INDEX IF NOT EXISTS movements_date ON movements(occurred_at DESC);
+
+-- PostgreSQL delivers notifications only after COMMIT, including changes made in DBeaver.
+CREATE OR REPLACE FUNCTION notify_inventory_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM pg_notify('estoque_changes', json_build_object('schema', TG_TABLE_SCHEMA, 'table', TG_TABLE_NAME)::text);
+  RETURN NULL;
+END;
+$$;
+CREATE OR REPLACE TRIGGER warehouses_changed AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON warehouses
+  FOR EACH STATEMENT EXECUTE FUNCTION notify_inventory_change();
+CREATE OR REPLACE TRIGGER products_changed AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON products
+  FOR EACH STATEMENT EXECUTE FUNCTION notify_inventory_change();
+CREATE OR REPLACE TRIGGER movements_changed AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON movements
+  FOR EACH STATEMENT EXECUTE FUNCTION notify_inventory_change();
 COMMIT;

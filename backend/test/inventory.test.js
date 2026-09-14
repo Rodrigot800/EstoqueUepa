@@ -12,7 +12,7 @@ test('valida nomes, unidades, inteiros positivos e períodos reais', () => {
   assert.throws(() => filters.parse({from:'2026-03-02',to:'2026-03-01'}));
 });
 
-test('fluxo de estoque com PostgreSQL real', { skip: !process.env.DATABASE_URL }, async t => {
+test('fluxo de estoque com PostgreSQL real', { skip: !(process.env.DATABASE_URL || process.env.PGHOST) }, async t => {
   const schema = `test_${Date.now()}`;
   const admin = new pg.Pool({connectionString:process.env.DATABASE_URL});
   await admin.query(`CREATE SCHEMA ${schema}`);

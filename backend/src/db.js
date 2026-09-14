@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { readFile } from 'node:fs/promises';
-export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, options: '-c timezone=America/Belem' });
+export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, options: '-c timezone=America/Belem', connectionTimeoutMillis: 5000 });
 export async function migrate(db = pool) {
   await db.query(await readFile(new URL('./schema.sql', import.meta.url), 'utf8'));
 }

@@ -2,6 +2,8 @@ name: estoque-uepa
 services:
   db:
     image: postgres:17-alpine
+    ports:
+      - "${DB_BIND_ADDRESS:-0.0.0.0}:${DB_PORT:-5434}:5432"
     environment:
       POSTGRES_DB: estoque
       POSTGRES_USER: estoque
@@ -20,7 +22,11 @@ services:
       context: .
       target: api
     environment:
-      DATABASE_URL: postgresql://estoque:${POSTGRES_PASSWORD}@db:5432/estoque
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: estoque
+      PGUSER: estoque
+      PGPASSWORD: ${POSTGRES_PASSWORD}
       TZ: America/Belem
     depends_on:
       db:
@@ -36,7 +42,7 @@ services:
       context: .
       target: web
     ports:
-      - "${BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:80"
+      - "${BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-8080}:80"
     depends_on:
       api:
         condition: service_healthy

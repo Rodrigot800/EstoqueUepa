@@ -3,3 +3,16 @@
 
 /* Warehouse navigation */
 .sidebar{overflow-y:auto}.sidebar .brand{margin-bottom:28px}.warehouse-picker{display:grid;gap:10px;margin:0 8px 28px}.warehouse-picker label{font-size:10px;font-weight:700;letter-spacing:1.4px;color:#718477}.warehouse-picker select{width:100%;font-weight:600;background:#f5f8f5}.warehouse-picker .secondary{font-size:11px;padding:9px}.warehouse-context{margin:-12px 0 24px;color:#6f8475;font-size:12px;overflow-wrap:anywhere}.warehouse-context strong{color:#365f46}.breadcrumb{display:flex;align-items:center;min-width:0}.warehouse-name{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.modal-intro{overflow-wrap:anywhere}@media(max-width:800px){.warehouse-picker{margin:20px 0 0;grid-template-columns:minmax(0,1fr) auto;gap:8px}.warehouse-picker label{grid-column:1/-1}.warehouse-picker select{font-size:12px}.sidebar .brand{margin-bottom:0}.warehouse-name{max-width:110px}.breadcrumb .slash{margin:0 8px}.warehouse-context{margin-top:-5px}.institution{margin-left:10px}}
+
+.warehouse-context{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.sync-status{font-size:11px;color:#a68143}.sync-status.connected{color:#477b59}
+
+.product-autocomplete{position:relative;margin-bottom:17px}
+.product-autocomplete>label{margin-bottom:8px}
+.product-autocomplete>input{width:100%;box-sizing:border-box}
+.product-suggestions{position:absolute;top:100%;left:0;right:0;z-index:5;background:#fff;border:1px solid #dce4dd;border-radius:9px;box-shadow:0 8px 24px #183c2020;overflow:hidden;margin-top:4px}
+.product-suggestions ul{list-style:none;margin:0;padding:4px}
+.product-suggestions li{padding:10px 12px;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere}
+.product-suggestions li:hover,.product-suggestions li[aria-selected=true]{background:#edf5ed}
+.product-suggestions strong{font-size:13px}
+.product-suggestions small,.product-suggestions p{font-size:12px;color:#657568}
+.product-suggestions p{padding:10px 12px;margin:0}
