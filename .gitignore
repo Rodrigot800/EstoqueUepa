@@ -14,6 +14,8 @@ venv/
 # IDE
 .vscode/
 .idea/
+.DS_Store
+view/tempCodeRunnerFile.py
 
 # Web
 node_modules/
