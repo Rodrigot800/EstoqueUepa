@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "Estoque UEPA",
+  "short_name": "Estoque UEPA",
+  "description": "Controle de estoque da Universidade do Estado do Pará.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#245b93",
+  "icons": [
+    {
+      "src": "/logo-quadrado.png",
+      "sizes": "500x500",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

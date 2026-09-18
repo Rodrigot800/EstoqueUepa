@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ProductAutocomplete from './ProductAutocomplete.jsx';
 import { Package, LayoutDashboard, ArrowLeftRight, Plus, Search, RefreshCw, ArrowDownLeft, ArrowUpRight, AlertTriangle, X, Trash2, CheckCircle2, Pencil } from 'lucide-react';
-import uepaLogo from '../../assets/UepaEstoqueIcone.png';
+import principalLogo from '../../assets/logo principal.png';
+import roundLogo from '../../assets/logo redondo.png';
 
 const number = n => Number(n).toLocaleString('pt-BR');
 const date = d => new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Belem' });
@@ -98,12 +99,12 @@ export default function App() {
     } catch (e) { setError(e.message || 'Não foi possível excluir o registro.'); }
   }
   return <div className="shell">
-    <aside className="sidebar"><a className="brand" href="#" onClick={e => { e.preventDefault(); changePage('stock'); }}><img className="brand-logo" src={uepaLogo} alt="Estoque UEPA"/><span>Estoque<span className="brand-sub">UEPA</span></span></a>
+    <aside className="sidebar"><a className="brand" href="#" onClick={e => { e.preventDefault(); changePage('stock'); }}><img className="brand-logo" src={roundLogo} alt="Estoque UEPA"/><span>Estoque<span className="brand-sub">UEPA</span></span></a>
       <div className="warehouse-picker"><label htmlFor="warehouse-select">ESTOQUE ATUAL</label><select id="warehouse-select" value={warehouseId} onChange={e => selectWarehouse(e.target.value)} disabled={!warehouses.length}>{!warehouses.length && <option value="">Carregando…</option>}{warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select><button className="secondary action-blue" onClick={() => setModal('warehouse')}><Plus size={16}/> Adicionar estoque</button></div><p className="nav-label">GESTÃO DE MATERIAIS</p>
       <nav><button className={page === 'stock' ? 'active' : ''} onClick={() => changePage('stock')}><LayoutDashboard size={19}/> Visão do estoque</button><button className={page === 'history' ? 'active' : ''} onClick={() => changePage('history')}><ArrowLeftRight size={19}/> Movimentações</button></nav>
-      <div className="sidebar-bottom"><img className="secondary-logo" src={uepaLogo} alt=""/><div>Universidade do Estado do Pará<small>Controle de almoxarifado</small></div></div>
+      <div className="sidebar-bottom"><div>Universidade do Estado do Pará<small>Controle de almoxarifado</small></div></div>
     </aside>
-    <div className="workspace"><header className="topbar"><span className="breadcrumb"><span className="warehouse-name" title={activeWarehouse?.name}>{activeWarehouse?.name || 'Almoxarifado'}</span><span className="slash">/</span> <strong>{page === 'stock' ? 'Visão do estoque' : 'Movimentações'}</strong></span><span className="institution">UEPA <img className="avatar" src={uepaLogo} alt=""/></span></header>
+    <div className="workspace"><header className="topbar"><span className="breadcrumb"><span className="warehouse-name" title={activeWarehouse?.name}>{activeWarehouse?.name || 'Almoxarifado'}</span><span className="slash">/</span> <strong>{page === 'stock' ? 'Visão do estoque' : 'Movimentações'}</strong></span><span className="institution"><img className="header-main-logo" src={principalLogo} alt="Universidade do Estado do Pará"/></span></header>
     <main><div className="page-heading page-actions"><button className="primary action-blue" onClick={() => setModal('movement')} disabled={loading || !products.length}><ArrowLeftRight size={17}/> Nova movimentação</button></div>
       {error && <div className="message error" role="alert">{error}<button onClick={() => refresh()}>Tentar novamente</button></div>}
       {notice && <div className="message success-message" role="status"><CheckCircle2 size={18}/>{notice}</div>}
