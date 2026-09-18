@@ -19,7 +19,7 @@
 :root{--uepa-blue:#245b93;--uepa-blue-dark:#173e72;--uepa-blue-soft:#e7f0f8;--uepa-green:#2b9975;--uepa-green-dark:#187253;--uepa-green-soft:#e4f4ed;--uepa-yellow:#bd8200;--uepa-yellow-soft:#fff4cf;--uepa-red:#ba3833;--uepa-red-soft:#fbe9e7;--uepa-ink:#14334e;--uepa-line:#d7e4ee;background:#f5f8fb;color:var(--uepa-ink)}
 body{background:linear-gradient(135deg,#f5f9fd 0%,#f1faf6 100%)}
 button:focus-visible,a:focus-visible{outline-color:var(--uepa-blue)}
-.sidebar{background:linear-gradient(165deg,#173e72 0%,#245b93 48%,#2b9975 120%);border-right:0;color:#fff;box-shadow:2px 0 20px #173e7226}
+.sidebar{background:linear-gradient(165deg,#173e72 0%,#245b93 100%);border-right:0;color:#fff;box-shadow:2px 0 20px #173e7226}
 .brand{color:#fff}.brand-logo{width:68px;height:68px;object-fit:cover;border-radius:50%;background:#fff;border:2px solid #ffffffb3;box-shadow:0 6px 18px #102c5066}.brand-sub{color:#c7efdc}.nav-label,.warehouse-picker label{color:#c7e4f3}.warehouse-picker select{background:#fff;border-color:#b6d8ee;color:var(--uepa-ink)}
 nav button{color:#d8edf9}nav button:hover:not(:disabled){background:#ffffff18}nav button.active{background:#fff;color:var(--uepa-blue-dark);box-shadow:0 5px 16px #002b4f26}.sidebar-bottom{border-top-color:#ffffff38;color:#eaf7f2}.sidebar-bottom small{color:#b7d8ec}.secondary-logo{width:32px;height:32px;object-fit:cover;border-radius:50%;background:#fff}.university-mark{display:none}
 .topbar{border-bottom-color:var(--uepa-line);background:#fff}.topbar strong{color:var(--uepa-blue-dark)}.avatar{width:40px;height:40px;object-fit:cover;background:#fff;border:2px solid #d8eaf6;color:transparent}.eyebrow{color:var(--uepa-blue)}h1,h2{color:var(--uepa-ink)}
