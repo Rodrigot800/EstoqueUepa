@@ -149,7 +149,7 @@ function BatchModal({kind, warehouse, products, onClose, onSaved}) {
       if (!products.some(p => p.id === productId) || !['ENTRADA','SAIDA'].includes(draft.type) || !Number.isInteger(quantity) || quantity <= 0 || quantity > 2147483647) { setError('Escolha o produto, o tipo e uma quantidade inteira positiva.'); return; }
       setItems([...items,{productId,type:draft.type,quantity}]);
     }
-    setDraft(empty); setProductQuery('');
+    setDraft(isProduct ? empty : {...empty, type:draft.type}); setProductQuery('');
   }
   async function save() {
     setSaving(true); setError('');

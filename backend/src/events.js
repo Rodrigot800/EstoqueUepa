@@ -10,7 +10,7 @@ export function createChangeFeed(db, { retryMs = 2000, heartbeatMs = 20000 } = {
   function broadcast(event, data) { for (const res of subscribers) send(res, event, data); }
   function disconnect(current) {
     if (client !== current) return;
-    client = undefined; online = false;
+                   client = undefined; online = false;
     current.release(true);
     broadcast('status', { online: false });
     if (!stopped) { clearTimeout(retry); retry = setTimeout(start, retryMs); retry.unref(); }
