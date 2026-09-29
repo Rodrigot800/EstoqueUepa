@@ -24,3 +24,6 @@ node_modules/
 !.env.example
 coverage/
 *.log
+
+#backup
+/backup_db/
